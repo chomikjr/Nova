@@ -18,7 +18,7 @@
   /* ---------------------------------------------------------------- APPS */
   const APPS = {
     games:        { title: 'Games',        icon: 'gamepad', bg: 'linear-gradient(135deg,#7c3aed,#db2777)', w: 1060, h: 720, render: renderGames },
-    music:        { title: 'Music',        icon: 'music',   bg: 'linear-gradient(135deg,#f43f5e,#f59e0b)', w: 440, h: 620, render: renderMusic },
+    music:        { title: 'Music',        icon: 'music',   bg: 'linear-gradient(135deg,#f43f5e,#f59e0b)', w: 470, h: 700, render: renderMusic },
     achievements: { title: 'Achievements', icon: 'trophy',  bg: 'linear-gradient(135deg,#d97706,#facc15)', w: 780, h: 640, render: renderAchievements },
     leaderboard:  { title: 'Leaderboard',  icon: 'chart',   bg: 'linear-gradient(135deg,#0891b2,#3b82f6)', w: 540, h: 640, render: renderLeaderboard },
     profile:      { title: 'Profile',      icon: 'user',    bg: 'linear-gradient(135deg,#059669,#06b6d4)', w: 580, h: 660, render: renderProfile },
@@ -471,7 +471,7 @@
     const last = m.recent.map((r) => ({ g: byId(r.id), at: r.at })).find((x) => x.g);
     if (!quickId || !byId(quickId)) quickId = pickQuick(m);
     const q = byId(quickId), dl = A.meta.daily(), ft = dl.featured;
-    const track = A.audio.music.tracks[A.settings.get('track')] || {};
+    const track = A.audio.music.now();
     const playing = A.audio.music.playing;
     const achDone = Object.keys(m.ach).length, achTotal = A.meta.achievements.length;
     const favs = m.favs.map(byId).filter(Boolean);
@@ -495,8 +495,8 @@
       '<div class="bar" style="margin-top:14px"><i style="width:' + (lv.pct * 100) + '%"></i></div>' +
       '<div class="wg-actions"><button class="pill" data-app="achievements" style="cursor:pointer">' + icon('trophy') + achDone + '/' + achTotal + ' achievements</button>' + (u ? '' : '<button class="pill" data-act="signup" style="cursor:pointer">' + icon('cloud') + 'Sign up to sync</button>') + '</div></section>' +
       '<section data-wg="music" class="wg os-glass"><div class="wg-head"><span class="os-label">Now playing</span><button class="btn btn-sm btn-ghost" data-app="music">' + icon('music') + 'Open</button></div>' +
-      '<div class="wg-row" style="cursor:default;padding:0"><span class="wg-ico" style="width:58px;height:58px;background:linear-gradient(135deg,#f43f5e,#f59e0b)">' + icon('music') + '</span><span class="wg-meta"><span class="wg-title" style="display:block">' + (playing ? esc(track.name) : 'Not playing') + '</span><span class="wg-sub" style="display:block">' + esc(track.vibe || '') + ' · Nova Radio</span></span>' +
-      '<button class="big-play" data-act="music" style="width:46px;height:46px" aria-label="' + (playing ? 'Pause' : 'Play') + '">' + icon(playing ? 'pause' : 'play') + '</button></div>' +
+      '<div class="wg-row" style="cursor:default;padding:0">' + musicArt(track, 58) + '<span class="wg-meta"><span class="wg-title" style="display:block">' + (playing ? esc(track.name) : 'Not playing') + '</span><span class="wg-sub" style="display:block">' + (playing ? esc(track.sub) : esc(track.kind === 'file' ? track.station.name + ' · ' + track.count + ' songs' : track.vibe + ' · Nova Radio')) + '</span></span>' +
+      '<button class="icon-btn" data-act="music-next" aria-label="Next">' + icon('skip') + '</button><button class="big-play" data-act="music" style="width:46px;height:46px;flex:none" aria-label="' + (playing ? 'Pause' : 'Play') + '">' + icon(playing ? 'pause' : 'play') + '</button></div>' +
       '<div class="viz" id="home-viz" style="margin-top:14px">' + '<i></i>'.repeat(28) + '</div></section>' +
       '<section data-wg="games" class="wg span-8 os-glass"><div class="wg-head"><span class="os-label">' + (favs.length ? 'Your favorites' : trendList.length >= 4 ? 'Trending now' : 'Popular right now') + '</span><button class="btn btn-sm btn-ghost" data-app="games">See all ' + LIVE.length + ' ' + icon('chevronRight') + '</button></div>' +
       '<div class="mini-grid">' + (favs.length ? favs : trendList.length >= 4 ? trendList : LIVE.filter((g) => g.popular)).slice(0, 8).map((g) => '<button class="mini" data-play="' + g.id + '" data-cover="' + g.id + '"><span>' + esc(g.title) + '</span></button>').join('') + '</div></section>' +
@@ -545,6 +545,7 @@
     if (act) {
       const k = act.dataset.act;
       if (k === 'shuffle') { quickId = pickQuick(A.meta.get()); A.audio.sfx('toggle'); paintHome(); }
+      if (k === 'music-next') { A.audio.unlock(); A.audio.music.next(); if (!A.audio.music.playing) { A.audio.music.held = false; A.settings.set('music', true); setTimeout(() => A.audio.music.start(), 50); } }
       if (k === 'music') { A.audio.unlock(); A.settings.set('music', !A.audio.music.playing); if (A.settings.get('music')) setTimeout(() => A.audio.music.start(), 50); setTimeout(paintHome, 120); }
       if (k === 'signup') A.ui.openAuth('signup');
       if (k === 'search') openPalette();
@@ -632,30 +633,74 @@
   }
 
   /* ========================================================== APP: MUSIC */
+  const GEN_BG = { neon: 'linear-gradient(135deg,#ec4899,#8b5cf6)', lofi: 'linear-gradient(135deg,#0ea5e9,#6366f1)', chip: 'linear-gradient(135deg,#22c55e,#eab308)' };
+  const stBg = (st) => 'linear-gradient(135deg,hsl(' + st.hue + ' 85% 58%),hsl(' + ((st.hue + 50) % 360) + ' 80% 45%))';
+  function musicArt(n, size, spin) {
+    const st = n.station, bg = n.kind === 'file' ? stBg(st) : (GEN_BG[n.key] || GEN_BG.neon);
+    const r = Math.round(size * 0.24);
+    return '<span class="wg-ico mu-art' + (spin ? ' is-spin' : '') + '" style="width:' + size + 'px;height:' + size + 'px;border-radius:' + r + 'px;background:' + bg + ';flex:none">' +
+      (n.kind === 'file' && st.cover ? '<img src="' + esc(st.cover) + '" alt="" loading="lazy">' : icon('music')) + '</span>';
+  }
+  const fmtT = (t) => { if (!isFinite(t) || t < 0) return '0:00'; t = Math.floor(t); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
   function renderMusic(body) {
+    const mu = A.audio.music;
+    let view = null; /* which station's song list is open: station key or 'gen' */
     const paint = () => {
-      const cur = A.settings.get('track'), playing = A.audio.music.playing, tr = A.audio.music.tracks[cur];
-      body.innerHTML = '<div class="app" style="text-align:center;justify-items:center">' +
-        '<div class="app-ico" style="width:150px;height:150px;border-radius:32px;background:linear-gradient(135deg,#f43f5e,#f59e0b,#8b5cf6);' + (playing ? 'animation:spin 12s linear infinite' : '') + '">' + icon('music') + '</div>' +
-        '<div><h2>' + esc(tr.name) + '</h2><p class="app-sub">' + esc(tr.vibe) + ' · generated live, never repeats the same way</p></div>' +
-        '<div class="viz music-viz" style="width:100%;height:50px">' + '<i></i>'.repeat(32) + '</div>' +
-        '<div style="display:flex;gap:16px;align-items:center"><button class="big-play mu-toggle" aria-label="' + (playing ? 'Pause' : 'Play') + '">' + icon(playing ? 'pause' : 'play') + '</button><button class="icon-btn mu-next" aria-label="Next track">' + icon('skip') + '</button></div>' +
+      const n = mu.now(), playing = mu.playing, list = mu.stations.list, owner = A.auth.isOwner && A.auth.isOwner();
+      if (!view || (view !== 'gen' && !mu.stations.get(view.slice(3)))) view = n.kind === 'file' ? n.key : (list[0] ? list[0].key : 'gen');
+      const vst = view === 'gen' ? null : mu.stations.get(view.slice(3));
+      const tabs = list.map((st) => '<button class="mu-tab" data-view="' + st.key + '" aria-pressed="' + (view === st.key) + '"><i style="background:' + stBg(st) + '"></i>' + esc(st.name) + '<span>' + st.tracks.length + '</span></button>').join('') +
+        '<button class="mu-tab" data-view="gen" aria-pressed="' + (view === 'gen') + '"><i style="background:' + GEN_BG.neon + '"></i>Generated<span>' + Object.keys(mu.tracks).length + '</span></button>';
+      const songs = vst
+        ? vst.tracks.map((t, i) => { const on = n.kind === 'file' && n.station === vst && n.index === i; return '<button class="mu-song' + (on ? ' is-on' : '') + '" data-song="' + i + '"><span class="mu-num">' + (on && playing ? '<span class="mu-eq"><i></i><i></i><i></i></span>' : i + 1) + '</span><span class="mu-st"><b>' + esc(t.title) + '</b>' + (t.artist ? '<small>' + esc(t.artist) + '</small>' : '') + '</span></button>'; }).join('')
+        : Object.entries(mu.tracks).map(([k, t]) => { const on = n.kind === 'gen' && n.key === k; return '<button class="track" data-track="' + k + '" aria-pressed="' + on + '"><span class="app-ico" style="background:' + (GEN_BG[k] || '#333') + '">' + icon('music') + '</span><span style="flex:1"><b>' + esc(t.name) + '</b><div style="font-size:13px;color:var(--dim)">' + esc(t.vibe) + ' · ' + t.bpm + ' BPM</div></span>' + (on && playing ? '<span class="pill ok">Playing</span>' : '') + '</button>'; }).join('');
+      const pos = mu.position() || { time: 0, duration: 0 };
+      body.innerHTML = '<div class="app mu-app">' +
+        '<div class="mu-hero">' + musicArt(n, 132, playing) +
+          '<div class="mu-now"><span class="os-label">' + (playing ? 'Now playing' : 'Paused') + (n.kind === 'file' ? ' · ' + (n.index + 1) + ' of ' + n.count : '') + '</span><h2>' + esc(n.name) + '</h2><p class="app-sub">' + esc(n.kind === 'file' ? n.sub : n.vibe + ' · generated live, never repeats the same way') + '</p></div></div>' +
+        (n.kind === 'file' ? '<div class="mu-prog"><span class="mu-t0">' + fmtT(pos.time) + '</span><div class="mu-bar" role="slider" aria-label="Seek" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + (pos.duration ? Math.round(pos.time / pos.duration * 100) : 0) + '"><i style="width:' + (pos.duration ? pos.time / pos.duration * 100 : 0) + '%"></i></div><span class="mu-t1">' + fmtT(pos.duration) + '</span></div>'
+          : '<div class="viz music-viz" style="width:100%;height:46px">' + '<i></i>'.repeat(32) + '</div>') +
+        '<div class="mu-ctrl">' +
+          '<button class="icon-btn mu-shuffle' + (A.settings.get('shuffle') ? ' is-on' : '') + '" aria-pressed="' + !!A.settings.get('shuffle') + '" aria-label="Shuffle"' + (n.kind === 'file' ? '' : ' disabled') + '>' + icon('shuffle') + '</button>' +
+          '<button class="icon-btn mu-prev" aria-label="Previous"' + (n.kind === 'file' ? '' : ' disabled') + '>' + icon('skipBack') + '</button>' +
+          '<button class="big-play mu-toggle" aria-label="' + (playing ? 'Pause' : 'Play') + '">' + icon(playing ? 'pause' : 'play') + '</button>' +
+          '<button class="icon-btn mu-next" aria-label="Next">' + icon('skip') + '</button>' +
+          '<span style="width:40px"></span></div>' +
         '<div class="setting-row" style="width:100%"><label class="label" for="mu-vol">Volume</label><input class="range" type="range" id="mu-vol" min="0" max="1" step="0.05" value="' + A.settings.get('musicVol') + '"></div>' +
-        '<div style="display:grid;gap:8px;width:100%;text-align:left">' + Object.entries(A.audio.music.tracks).map(([k, t]) => '<button class="track" data-track="' + k + '" aria-pressed="' + (k === cur) + '"><span class="app-ico" style="background:' + ({ neon: 'linear-gradient(135deg,#ec4899,#8b5cf6)', lofi: 'linear-gradient(135deg,#0ea5e9,#6366f1)', chip: 'linear-gradient(135deg,#22c55e,#eab308)' }[k] || '#333') + '">' + icon('music') + '</span><span style="flex:1"><b>' + esc(t.name) + '</b><div style="font-size:13px;color:var(--dim)">' + esc(t.vibe) + ' · ' + t.bpm + ' BPM</div></span>' + (k === cur && playing ? '<span class="pill ok">Playing</span>' : '') + '</button>').join('') + '</div>' +
+        '<div class="mu-tabs" role="tablist">' + tabs + '</div>' +
+        '<div class="mu-list">' + songs + '</div>' +
+        (!list.length && owner ? '<div class="mu-hint">' + icon('upload') + '<div><b>Add your own stations</b><br>Put MP3s in <code>assets/audio/hip hop/</code>, <code>assets/audio/lofi/</code>… (any folder name), then push. Each folder becomes a station.</div></div>' : '') +
         '<div class="setting-row" style="width:100%;text-align:left"><div><div class="label">Pause in games</div><div class="desc">Games play their own sound</div></div><label class="switch"><input type="checkbox" class="mu-pause"' + (A.settings.get('pauseMusicInGames') ? ' checked' : '') + '><span></span></label></div></div>';
       startViz();
     };
-    const toggle = (on) => { A.audio.unlock(); A.audio.music.held = false; A.settings.set('music', on); if (on) setTimeout(() => A.audio.music.start(), 40); setTimeout(() => { paint(); renderHome(); }, 120); };
+    const play = () => { A.audio.unlock(); mu.held = false; if (!A.settings.get('music')) A.settings.set('music', true); setTimeout(() => mu.start(), 40); };
+    const toggle = (on) => { A.audio.unlock(); mu.held = false; A.settings.set('music', on); if (on) setTimeout(() => mu.start(), 40); setTimeout(() => { paint(); renderHome(); }, 120); };
     body.addEventListener('click', (e) => {
-      if (e.target.closest('.mu-toggle')) toggle(!A.audio.music.playing);
-      if (e.target.closest('.mu-next')) { const ks = Object.keys(A.audio.music.tracks); A.settings.set('track', ks[(ks.indexOf(A.settings.get('track')) + 1) % ks.length]); toggle(true); }
+      if (e.target.closest('.mu-toggle')) return toggle(!mu.playing);
+      if (e.target.closest('.mu-next')) { A.audio.unlock(); mu.next(); if (!mu.playing) play(); return; }
+      if (e.target.closest('.mu-prev')) { A.audio.unlock(); mu.prev(); if (!mu.playing) play(); return; }
+      if (e.target.closest('.mu-shuffle')) { A.settings.set('shuffle', !A.settings.get('shuffle')); A.audio.sfx('toggle'); return; }
+      const v = e.target.closest('[data-view]'); if (v) { view = v.dataset.view; A.audio.sfx('click'); paint(); return; }
+      const sg = e.target.closest('[data-song]'); if (sg && view !== 'gen') { A.audio.unlock(); mu.playAt(view, +sg.dataset.song); return; }
+      const bar = e.target.closest('.mu-bar'); if (bar) { const r = bar.getBoundingClientRect(); mu.seek((e.clientX - r.left) / r.width); return; }
       const t = e.target.closest('[data-track]'); if (t) { A.settings.set('track', t.dataset.track); toggle(true); }
+    });
+    body.addEventListener('keydown', (e) => {
+      if (!e.target.matches('.mu-bar')) return;
+      const p = mu.position(); if (!p || !p.duration) return;
+      if (e.key === 'ArrowRight') { mu.seek((p.time + 5) / p.duration); e.preventDefault(); }
+      if (e.key === 'ArrowLeft') { mu.seek((p.time - 5) / p.duration); e.preventDefault(); }
     });
     body.addEventListener('input', (e) => { if (e.target.id === 'mu-vol') A.settings.set('musicVol', +e.target.value); });
     body.addEventListener('change', (e) => { if (e.target.matches('.mu-pause')) A.settings.set('pauseMusicInGames', e.target.checked); });
     paint();
-    const off = onEv('music', () => setTimeout(paint, 30));
-    return off;
+    const offs = [onEv('music', () => setTimeout(paint, 30)), onEv('stations', () => paint()),
+      onEv('musictime', (d) => {
+        const bar = $('.mu-bar i', body); if (!bar) return;
+        bar.style.width = (d.duration ? d.time / d.duration * 100 : 0) + '%';
+        $('.mu-t0', body).textContent = fmtT(d.time); $('.mu-t1', body).textContent = fmtT(d.duration);
+      })];
+    return () => offs.forEach((f) => f && f());
   }
 
   /* =================================================== APP: ACHIEVEMENTS */
@@ -847,6 +892,7 @@
   A.on('meta', () => { renderHome(); });
   A.on('auth', () => { paintDock(); renderHome(); });
   A.on('music', () => renderHome());
+  A.on('stations', () => renderHome());
   A.on('settings', (d) => { if (['showFps', 'clock24'].includes(d.key)) paintDock(); if (d.key === 'track' || d.key === 'music') renderHome(); });
   window.addEventListener('storage', (e) => { if (e.key === 'nova.meta' || e.key === 'nova.scores') { renderHome(); libs.forEach((fn) => fn()); } });
   addEventListener('resize', () => { if (isMobile()) wins.forEach((w) => setMax(w, true, true)); });

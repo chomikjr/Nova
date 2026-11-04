@@ -37,8 +37,9 @@
       supabaseUrl: 'https://oazqmjnkkyqwxpsglgcb.supabase.co',
       supabaseAnonKey: 'sb_publishable_h-I9xAYcRlVRze13k2v40Q_CZ6Rf8C3'
     },
-    version: '3.0',
+    version: '3.1',
     changelog: [
+      { v: '3.1', date: 'Nov 2026', items: ['Music stations: Hip Hop, Lo-Fi and more, playing real songs', 'Song list, skip back/forward, shuffle and a seek bar in the Music app', 'Media keys and lock-screen controls work for stations', 'Stations keep playing in a background tab'] },
       { v: '3.0', date: 'Nov 2026', items: ['Nova OS: windows, split screen, dock, start menu, lock screen and customizable widgets', 'Everything is free — no more Pro', '36 new games (Antimatter Dimensions, Candy Box 2, Wordle+, n-gon, Solitaire, Q1K3, Pac-Man…)', 'XP, levels, achievements, daily + weekly challenges, streaks and a weekly XP race', 'Favorites, likes, trending, recently played and game requests'] },
       { v: '2.0', date: 'Oct 2026', items: ['Cloud accounts with sync across devices', 'Global leaderboards', '13 open-source games'] },
       { v: '1.0', date: 'Oct 2026', items: ['Nova Arcade launches with Neon Snake'] }
@@ -213,6 +214,7 @@
     chart: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
     home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
     skip: '<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/>',
+    skipBack: '<polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/>',
     menu: '<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
     palette: '<circle cx="13.5" cy="6.5" r="1.2"/><circle cx="17.5" cy="10.5" r="1.2"/><circle cx="8.5" cy="7.5" r="1.2"/><circle cx="6.5" cy="12.5" r="1.2"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.55-2.5 5.55-5.55C21.97 6.01 17.46 2 12 2z"/>',
     phone: '<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/>',
@@ -740,11 +742,16 @@
      SETTINGS
      ------------------------------------------------------------------------ */
   const DEFAULTS = {
-    bg: 'void', music: true, track: 'neon', musicVol: 0.45, sfx: true, sfxVol: 0.7,
+    bg: 'void', music: true, track: 'auto', shuffle: false, musicVol: 0.45, sfx: true, sfxVol: 0.7,
     accent: 'violet', crt: false, reducedMotion: false, shake: true, pauseMusicInGames: true, showFps: true, clock24: false, gamesMaximized: true, lockScreen: true
   };
   const settings = {
-    _s: Object.assign({}, DEFAULTS, store.get('settings', {})),
+    _s: (() => {
+      const s = Object.assign({}, DEFAULTS, store.get('settings', {}));
+      /* v3.1: music folders arrived — old saved 'neon' becomes 'auto' once so folder stations get picked */
+      if (!s.musicV2) { if (s.track === 'neon') s.track = 'auto'; s.musicV2 = true; }
+      return s;
+    })(),
     get(k) { return this._s[k]; },
     all() { return Object.assign({}, this._s); },
     set(k, v) {
@@ -763,11 +770,13 @@
     if (!changed || changed === 'musicVol' || changed === 'sfxVol' || changed === 'sfx') audio.applyVolumes();
     if (changed === 'music' && !EMBED) settings.get('music') ? audio.music.start() : audio.music.stop();
     if (changed === 'track') audio.music.switchTo(settings.get('track'));
+    if (changed === 'shuffle') emit('music', { playing: audio.music.playing });
     if (changed === 'bg' || changed === 'reducedMotion') bg.applyPage();
   }
 
   /* ------------------------------------------------------------------------
-     AUDIO — all sounds are synthesized with WebAudio, so no assets needed.
+     AUDIO — SFX and the built-in tracks are synthesized with WebAudio.
+     Music stations play your own files from assets/audio/<station>/.
      ------------------------------------------------------------------------ */
   const audio = (() => {
     let ctx = null, master, sfxBus, musicBus, noiseBuf, analyser = null;
@@ -910,37 +919,181 @@
       }
     };
 
+    /* ---- Music stations: MP3 folders in assets/audio/<station>/ ----
+       scripts/build-audio-manifest.js writes assets/audio/manifest.json (Vercel runs it on every deploy). */
+    const stations = {
+      list: [], loaded: false, _p: null,
+      load(force) {
+        if (this._p && !force) return this._p;
+        this._p = fetch(ROOT + 'assets/audio/manifest.json', { cache: 'no-cache' })
+          .then((r) => (r.ok ? r.json() : { stations: [] }))
+          .catch(() => ({ stations: [] }))
+          .then((m) => {
+            const enc = (p) => p.split('/').map(encodeURIComponent).join('/');
+            this.list = (m.stations || []).filter((st) => st.tracks && st.tracks.length).map((st) => Object.assign({}, st, {
+              key: 'st:' + st.id,
+              cover: st.cover ? ROOT + 'assets/audio/' + enc(st.folder) + '/' + enc(st.cover) : null,
+              tracks: st.tracks.map((t) => Object.assign({}, t, { src: ROOT + 'assets/audio/' + enc(st.folder) + '/' + enc(t.file) }))
+            }));
+            this.loaded = true; emit('stations', { list: this.list });
+            return this.list;
+          });
+        return this._p;
+      },
+      get(id) { return this.list.find((st) => st.id === id) || null; }
+    };
+    const POS_KEY = 'nova.musicpos';
+    const readPos = () => { try { return JSON.parse(localStorage.getItem(POS_KEY)) || {}; } catch (e) { return {}; } };
+    const writePos = (o) => { try { localStorage.setItem(POS_KEY, JSON.stringify(o)); } catch (e) {} };
+    let el = null;
+    function mediaEl() {
+      if (el) return el;
+      el = new Audio(); el.preload = 'auto';
+      const c = ensure();
+      if (c && c.createMediaElementSource) { try { c.createMediaElementSource(el).connect(musicBus); } catch (e) {} }
+      el.addEventListener('ended', () => music.next(true));
+      el.addEventListener('playing', () => { music._errs = 0; });
+      el.addEventListener('error', () => {
+        if (!music.playing || music.mode !== 'file') return;
+        music._errs = (music._errs || 0) + 1;
+        if (music.station && music._errs < music.station.tracks.length) music.next(true);
+        else { music.stop(true); emit('music', { playing: false, error: true }); }
+      });
+      let last = 0;
+      el.addEventListener('timeupdate', () => {
+        const now = Date.now(); if (now - last < 400) return; last = now;
+        emit('musictime', { time: el.currentTime, duration: el.duration || 0 });
+        if (music.station) { const p = readPos(); p[music.station.id] = { i: music.idx, t: Math.floor(el.currentTime) }; writePos(p); }
+      });
+      return el;
+    }
+    function resolveKey() {
+      const k = settings.get('track') || 'auto';
+      if (k === 'auto') return stations.list[0] ? stations.list[0].key : 'neon';
+      if (k.startsWith('st:') && stations.loaded && !stations.get(k.slice(3))) return stations.list[0] ? stations.list[0].key : 'neon';
+      return k;
+    }
+    function mediaSession(t, st) {
+      if (!('mediaSession' in navigator)) return;
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist || st.name, album: st.name + ' · Nova Radio', artwork: st.cover ? [{ src: st.cover }] : [] });
+        navigator.mediaSession.setActionHandler('nexttrack', () => music.next());
+        navigator.mediaSession.setActionHandler('previoustrack', () => music.prev());
+        navigator.mediaSession.setActionHandler('play', () => settings.set('music', true));
+        navigator.mediaSession.setActionHandler('pause', () => settings.set('music', false));
+      } catch (e) {}
+    }
+
     const music = {
-      playing: false, timer: null, step: 0, next: 0, track: null,
-      tracks: TRACKS,
+      playing: false, timer: null, step: 0, next_: 0, track: null, mode: 'gen', station: null, idx: 0, _loaded: null,
+      tracks: TRACKS, stations,
+      /* What the UI should show, playing or not */
+      now() {
+        const k = resolveKey();
+        if (k.startsWith('st:')) {
+          const st = stations.get(k.slice(3));
+          if (st) {
+            const i = this.station === st ? this.idx : ((readPos()[st.id] || {}).i || 0) % st.tracks.length, t = st.tracks[i];
+            return { kind: 'file', key: k, station: st, name: t.title, sub: (t.artist ? t.artist + ' · ' : '') + st.name, vibe: st.vibe || st.name, track: t, index: i, count: st.tracks.length, cover: st.cover, hue: st.hue };
+          }
+        }
+        const tr = TRACKS[k] || TRACKS.neon;
+        return { kind: 'gen', key: k, name: tr.name, sub: tr.vibe + ' · ' + tr.bpm + ' BPM', vibe: tr.vibe, bpm: tr.bpm };
+      },
       start() {
         const c = ensure(); if (!c || c.state !== 'running' || this.playing) return;
-        this.track = TRACKS[settings.get('track')] || TRACKS.neon;
+        if (!stations.loaded) { stations.load().then(() => { if (settings.get('music') && !this.held && !EMBED) this.start(); }); return; }
+        const k = resolveKey();
+        if (k.startsWith('st:')) return this._startFile(stations.get(k.slice(3)));
+        this.mode = 'gen';
+        this.track = TRACKS[k] || TRACKS.neon;
         if (this.track.init && !this.track.mel) this.track.init();
-        this.playing = true; this.step = 0; this.next = c.currentTime + 0.12;
-        musicBus.gain.cancelScheduledValues(c.currentTime);
-        musicBus.gain.setValueAtTime(musicBus.gain.value, c.currentTime);
-        musicBus.gain.linearRampToValueAtTime(settings.get('musicVol') * 0.6, c.currentTime + 1.5);
+        this.playing = true; this.step = 0; this.next_ = c.currentTime + 0.12;
+        this._fade(settings.get('musicVol') * 0.6, 1.5);
         this.timer = setInterval(() => this._tick(), 25);
         emit('music', { playing: true, track: this.track.name });
       },
+      _fade(to, secs) {
+        const c = ctx; musicBus.gain.cancelScheduledValues(c.currentTime);
+        musicBus.gain.setValueAtTime(musicBus.gain.value, c.currentTime);
+        musicBus.gain.linearRampToValueAtTime(to, c.currentTime + secs);
+      },
+      _startFile(st) {
+        const e = mediaEl();
+        this.mode = 'file'; this.playing = true;
+        if (this.station !== st || !this._loaded) {
+          this.station = st;
+          const saved = readPos()[st.id];
+          if (saved && saved.i < st.tracks.length) this._load(saved.i, saved.t);
+          else this._load(settings.get('shuffle') ? Math.floor(Math.random() * st.tracks.length) : 0);
+        }
+        this._fade(settings.get('musicVol') * 0.6, 0.35);
+        const p = e.play(); if (p && p.catch) p.catch(() => {});
+        emit('music', { playing: true, track: st.name });
+      },
+      _load(i, at) {
+        const st = this.station, e = mediaEl();
+        this.idx = ((i % st.tracks.length) + st.tracks.length) % st.tracks.length;
+        const t = st.tracks[this.idx];
+        this._loaded = t.src; e.src = t.src;
+        if (at) { const seek = () => { try { e.currentTime = at; } catch (x) {} e.removeEventListener('loadedmetadata', seek); }; e.addEventListener('loadedmetadata', seek); }
+        mediaSession(t, st);
+        const p = readPos(); p[st.id] = { i: this.idx, t: at || 0 }; writePos(p);
+      },
+      _pick(dir) {
+        const n = this.station.tracks.length; if (n < 2) return this.idx;
+        if (settings.get('shuffle')) { let j; do { j = Math.floor(Math.random() * n); } while (j === this.idx); return j; }
+        return this.idx + dir;
+      },
+      /* Skip forward. Generated tracks: go to the next station/track in the list. */
+      next(auto) {
+        if (this.mode === 'file' && this.station && resolveKey() === this.station.key) {
+          this._load(this._pick(1));
+          if (this.playing) { const p = mediaEl().play(); if (p && p.catch) p.catch(() => {}); }
+          emit('music', { playing: this.playing, track: this.station.name }); return;
+        }
+        if (auto) return;
+        const keys = stations.list.map((x) => x.key).concat(Object.keys(TRACKS)), k = resolveKey();
+        settings.set('track', keys[(keys.indexOf(k) + 1) % keys.length]);
+      },
+      prev() {
+        if (this.mode === 'file' && this.station && resolveKey() === this.station.key) {
+          if (el && el.currentTime > 3) { el.currentTime = 0; return; }
+          this._load(settings.get('shuffle') ? this._pick(-1) : this.idx - 1);
+          if (this.playing) { const p = mediaEl().play(); if (p && p.catch) p.catch(() => {}); }
+          emit('music', { playing: this.playing, track: this.station.name });
+        }
+      },
+      /* Play song i of a station (station key like 'st:hip-hop') */
+      playAt(key, i) {
+        const st = stations.get(key.slice(3)); if (!st) return;
+        if (settings.get('track') !== key || this.mode !== 'file') { this.stop(true); this._s = true; settings.set('track', key); this._s = false; }
+        this.station = st; this.mode = 'file'; this._load(i); this.held = false;
+        if (!settings.get('music')) settings.set('music', true);
+        if (!this.playing) this.start();
+        else { const p = mediaEl().play(); if (p && p.catch) p.catch(() => {}); emit('music', { playing: true, track: st.name }); }
+      },
+      seek(frac) { if (el && el.duration && this.mode === 'file') el.currentTime = Math.max(0, Math.min(0.999, frac)) * el.duration; },
+      position() { return el && this.mode === 'file' ? { time: el.currentTime || 0, duration: el.duration || 0 } : null; },
       _tick() {
         const tr = this.track, sd = 60 / tr.bpm / 4;
-        while (this.next < ctx.currentTime + 0.12) {
+        while (this.next_ < ctx.currentTime + 0.12) {
           const swing = tr.swing && this.step % 2 ? tr.swing * sd : 0;
-          try { tr.step(this.step % tr.len, this.next + swing, sd); } catch (e) {}
-          this.next += sd; this.step++;
+          try { tr.step(this.step % tr.len, this.next_ + swing, sd); } catch (e) {}
+          this.next_ += sd; this.step++;
         }
       },
       stop(fast) {
         if (!this.playing) return;
         this.playing = false; clearInterval(this.timer);
         if (ctx) { musicBus.gain.cancelScheduledValues(ctx.currentTime); musicBus.gain.setTargetAtTime(0, ctx.currentTime, fast ? 0.02 : 0.25); }
+        if (el) setTimeout(() => { if (!music.playing || music.mode !== 'file') el.pause(); }, fast ? 60 : 700);
         emit('music', { playing: false });
       },
-      switchTo() { if (this.playing) { this.stop(true); setTimeout(() => this.start(), 120); } },
+      switchTo() { if (this._s) return; if (this.playing) { this.stop(true); setTimeout(() => this.start(), 120); } else emit('music', { playing: false }); },
       duck(on) { if (ctx && this.playing) musicBus.gain.setTargetAtTime(on ? settings.get('musicVol') * 0.2 : settings.get('musicVol') * 0.6, ctx.currentTime, 0.2); }
     };
+    if (!EMBED) stations.load();
 
     /* Browsers block audio until a user gesture — unlock on first interaction */
     function unlock() {
@@ -953,7 +1106,7 @@
     }, true));
     document.addEventListener('visibilitychange', () => {
       if (!ctx) return;
-      if (document.hidden) ctx.suspend(); else ctx.resume();
+      if (document.hidden) { if (!(music.playing && music.mode === 'file')) ctx.suspend(); } else ctx.resume();
     });
 
     function spectrum(arr) { if (!analyser) return null; analyser.getByteFrequencyData(arr); return arr; }
@@ -1505,14 +1658,16 @@
   const ACCENTS = [['violet', '#8b5cf6'], ['cyan', '#06b6d4'], ['lime', '#84cc16'], ['sunset', '#f97316'], ['rose', '#f43f5e']];
   function openSettings(target) {
     const s = settings.all();
-    const trackOpts = Object.entries(audio.music.tracks).map(([k, v]) => '<option value="' + k + '"' + (s.track === k ? ' selected' : '') + '>' + v.name + ' — ' + v.vibe + '</option>').join('');
+    const curKey = audio.music.now().key;
+    const trackOpts = (audio.music.stations.list.length ? '<optgroup label="Stations">' + audio.music.stations.list.map((st) => '<option value="' + st.key + '"' + (curKey === st.key ? ' selected' : '') + '>' + esc(st.name) + ' — ' + st.tracks.length + ' song' + (st.tracks.length === 1 ? '' : 's') + '</option>').join('') + '</optgroup>' : '') +
+      '<optgroup label="Generated live">' + Object.entries(audio.music.tracks).map(([k, v]) => '<option value="' + k + '"' + (curKey === k ? ' selected' : '') + '>' + v.name + ' — ' + v.vibe + '</option>').join('') + '</optgroup>';
     const sw = (id, on, label, desc) => '<div class="setting-row"><div><div class="label" id="lbl-' + id + '">' + label + '</div>' + (desc ? '<div class="desc">' + desc + '</div>' : '') + '</div><label class="switch"><input type="checkbox" data-set="' + id + '" aria-labelledby="lbl-' + id + '"' + (on ? ' checked' : '') + '><span></span></label></div>';
     const html = (
       (target ? '' : '<h2>Settings</h2><p class="modal-sub">Make the arcade yours. Changes save automatically.</p>') +
       '<section class="settings-group"><h3>Background</h3><div class="bg-grid"></div>' +
       '<label class="btn btn-sm" style="margin-top:12px;cursor:pointer">' + icon('upload') + 'Use my own image<input type="file" accept="image/*" class="sr-only bg-upload"></label></section>' +
       '<section class="settings-group"><h3>Audio</h3>' +
-      sw('music', s.music, 'Music', 'Generated live in your browser') +
+      sw('music', s.music, 'Music', 'Your stations, or tracks generated live') +
       '<div class="setting-row"><label class="label" for="set-track">Track</label><select class="select" id="set-track" style="max-width:240px;min-height:42px">' + trackOpts + '</select></div>' +
       '<div class="setting-row"><label class="label" for="set-mv">Music volume</label><input class="range" type="range" id="set-mv" min="0" max="1" step="0.05" value="' + s.musicVol + '"></div>' +
       sw('sfx', s.sfx, 'Sound effects') +
@@ -1591,7 +1746,7 @@
   /* ---- Music / mute quick toggle helpers ---- */
   function bindMusicButton(btn) {
     const paint = () => { const on = settings.get('music'); btn.classList.toggle('is-off', !on); btn.setAttribute('aria-pressed', String(on)); btn.setAttribute('aria-label', on ? 'Turn music off' : 'Turn music on'); btn.innerHTML = icon(on ? 'music' : 'volumeX'); };
-    btn.addEventListener('click', () => { settings.set('music', !settings.get('music')); audio.sfx('toggle'); paint(); toast(settings.get('music') ? 'Now playing: ' + (audio.music.tracks[settings.get('track')] || {}).name : 'Music off', 'music'); });
+    btn.addEventListener('click', () => { settings.set('music', !settings.get('music')); audio.sfx('toggle'); paint(); toast(settings.get('music') ? 'Now playing: ' + audio.music.now().name : 'Music off', 'music'); });
     on('settings', (d) => d.key === 'music' && paint());
     paint();
   }

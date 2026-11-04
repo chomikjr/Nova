@@ -1,0 +1,55 @@
+{
+  "generated": "2026-11-04T04:09:20.299Z",
+  "stations": [
+    {
+      "id": "hip-hop",
+      "folder": "hip hop",
+      "name": "Hip Hop",
+      "vibe": "Beats to game to",
+      "hue": 280,
+      "order": 1,
+      "cover": null,
+      "tracks": []
+    },
+    {
+      "id": "lofi",
+      "folder": "lofi",
+      "name": "Lo-Fi",
+      "vibe": "Chill beats to study to",
+      "hue": 220,
+      "order": 2,
+      "cover": null,
+      "tracks": []
+    },
+    {
+      "id": "chill",
+      "folder": "chill",
+      "name": "Chill",
+      "vibe": "Slow and easy",
+      "hue": 170,
+      "order": 3,
+      "cover": null,
+      "tracks": []
+    },
+    {
+      "id": "electronic",
+      "folder": "electronic",
+      "name": "Electronic",
+      "vibe": "High energy",
+      "hue": 300,
+      "order": 4,
+      "cover": null,
+      "tracks": []
+    },
+    {
+      "id": "pop",
+      "folder": "pop",
+      "name": "Pop",
+      "vibe": "Sing-along hits",
+      "hue": 340,
+      "order": 5,
+      "cover": null,
+      "tracks": []
+    }
+  ]
+}
