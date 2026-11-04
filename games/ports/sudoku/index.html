@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mini Sudoku">
+    <link rel="icon" type="image/x-icon" href="favicon.ico"/>
+    <title>Mini Sudoku</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .header-buttons {
+            position: absolute;
+            right: 0;
+            top: 0;
+            display: flex;
+            gap: 5px;
+        }
+
+        .header-button {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .header-button:hover {
+            background: #4a90e2;
+            transform: scale(1.1);
+        }
+
+        .header-button:hover svg {
+            fill: white;
+        }
+
+        .game-title {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            padding: 5px 10px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .difficulty-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .difficulty-btn.easy {
+            color: #27ae60;
+            border-color: #27ae60;
+        }
+
+        .difficulty-btn.easy.active {
+            background: #27ae60;
+            color: white;
+        }
+
+        .difficulty-btn.medium {
+            color: #f39c12;
+            border-color: #f39c12;
+        }
+
+        .difficulty-btn.medium.active {
+            background: #f39c12;
+            color: white;
+        }
+
+        .difficulty-btn.hard {
+            color: #e74c3c;
+            border-color: #e74c3c;
+        }
+
+        .difficulty-btn.hard.active {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .difficulty-btn.expert {
+            color: #8e44ad;
+            border-color: #8e44ad;
+        }
+
+        .difficulty-btn.expert.active {
+            background: #8e44ad;
+            color: white;
+        }
+
+        .puzzle-info {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+            padding: 6px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .info-label {
+            color: #999;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .sudoku-board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1px;
+            background: #666;
+            padding: 2px;
+            border-radius: 8px;
+            margin: 10px auto;
+            width: 100%;
+            max-width: 300px;
+            aspect-ratio: 1;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .sudoku-cell {
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            aspect-ratio: 1;
+            border: 1px solid #ddd;
+        }
+
+        .sudoku-cell:hover:not(.given) {
+            background: #f0f8ff;
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .sudoku-cell.selected {
+            background: #e6f3ff !important;
+            box-shadow: inset 0 0 0 2px #4a90e2;
+            z-index: 5;
+        }
+
+        .sudoku-cell.given {
+            background: #f5f5f5;
+            color: #333;
+            cursor: default;
+        }
+
+        .sudoku-cell.error {
+            color: #e74c3c !important;
+            background: #ffe6e6 !important;
+        }
+
+        .sudoku-cell.hint-cell {
+            color: #f39c12;
+            animation: pulse 1s infinite;
+        }
+
+        .sudoku-cell.user-filled {
+            color: #4a90e2;
+        }
+
+        @keyframes pulse {
+            0% { background: #fff3cd; }
+            50% { background: #ffeaa7; }
+            100% { background: #fff3cd; }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .number-btn {
+            width: 42px;
+            height: 42px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .number-btn:hover {
+            background: #4a90e2;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 5px;
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            white-space: nowrap;
+        }
+
+        .btn-new {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .btn-hint {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-check {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-clear {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-notes {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .btn-how {
+            background: #34495e;
+            color: white;
+            grid-column: span 3;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .message {
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 13px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            display: block;
+        }
+
+        .notes-mode {
+            text-align: center;
+            margin: 8px 0;
+            font-size: 12px;
+            color: #666;
+            padding: 4px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .notes-mode.active {
+            color: #9b59b6;
+            font-weight: bold;
+            background: #f3e7ff;
+        }
+
+        .cell-notes {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            pointer-events: none;
+        }
+
+        .note-number {
+            font-size: 8px;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .block-highlight {
+            background: #f9f9f9;
+        }
+
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+            padding: 10px;
+        }
+
+        .dialog-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .dialog {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 90%;
+            width: 380px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .dialog-overlay.show .dialog {
+            transform: scale(1);
+        }
+
+        .dialog.how-to-play {
+            max-width: 90%;
+            width: 450px;
+        }
+
+        .dialog-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #333;
+            text-align: center;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .dialog-message {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .dialog-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+
+        .dialog-btn-cancel {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .dialog-btn-ok {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .dialog-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .leaderboard-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+
+        .leaderboard-tab {
+            padding: 6px 12px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .leaderboard-tab.active {
+            background: #4a90e2;
+            color: white;
+            border-color: #4a90e2;
+        }
+
+        .leaderboard-content {
+            min-height: 200px;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .leaderboard-entry:nth-child(1) {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            font-weight: bold;
+        }
+
+        .leaderboard-entry:nth-child(2) {
+            background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+        }
+
+        .leaderboard-entry:nth-child(3) {
+            background: linear-gradient(135deg, #cd7f32, #e4a853);
+        }
+
+        .leaderboard-rank {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .leaderboard-time {
+            font-weight: bold;
+            color: #4a90e2;
+        }
+
+        .leaderboard-hints {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .no-scores {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+
+        .rules-section {
+            margin-bottom: 15px;
+        }
+
+        .rules-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #4a90e2;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .rules-content {
+            color: #555;
+            line-height: 1.5;
+            padding-left: 15px;
+            font-size: 13px;
+        }
+
+        .rules-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .rules-list li {
+            margin-bottom: 6px;
+            padding-left: 18px;
+            position: relative;
+        }
+
+        .rules-list li:before {
+            content: "•";
+            color: #4a90e2;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 25px);
+            gap: 1px;
+            background: #666;
+            padding: 2px;
+            margin: 8px auto;
+            width: fit-content;
+        }
+
+        .example-cell {
+            width: 25px;
+            height: 25px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+
+        .example-cell.highlight {
+            background: #e6f3ff;
+            color: #4a90e2;
+        }
+
+        .example-cell.given {
+            background: #f5f5f5;
+        }
+
+        .keyboard-shortcuts {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        .shortcut-key {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        svg {
+            vertical-align: middle;
+            width: 14px;
+            height: 14px;
+        }
+
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 12px;
+                border-radius: 10px;
+            }
+
+            .game-title {
+                font-size: 24px;
+            }
+
+            .sudoku-board {
+                max-width: 280px;
+            }
+
+            .sudoku-cell {
+                font-size: 18px;
+            }
+
+            .number-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            .action-btn {
+                font-size: 10px;
+                padding: 7px 4px;
+            }
+
+            .difficulty-btn {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .sudoku-board {
+                max-width: 260px;
+            }
+
+            .number-btn {
+                width: 38px;
+                height: 38px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div class="header-buttons">
+                <button class="header-button" onclick="showLeaderboard()" title="Leaderboard">
+                    <svg width="16" height="16" fill="#666">
+                        <path d="M4 10 L4 16 M8 6 L8 16 M12 12 L12 16" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 2 L10 4 L6 4 Z" fill="currentColor"/>
+                    </svg>
+                </button>
+                <button class="header-button" onclick="showHowToPlay()" title="How to Play">
+                    <svg width="16" height="16" fill="#666">
+                        <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="8" cy="5" r="1.5"/>
+                        <path d="M8 7 L8 11" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </button>
+            </div>
+            <h1 class="game-title">Mini Sudoku</h1>
+            
+            <div class="difficulty-selector">
+                <button class="difficulty-btn easy active" onclick="selectDifficulty('easy')">Easy</button>
+                <button class="difficulty-btn medium" onclick="selectDifficulty('medium')">Medium</button>
+                <button class="difficulty-btn hard" onclick="selectDifficulty('hard')">Hard</button>
+                <button class="difficulty-btn expert" onclick="selectDifficulty('expert')">Expert</button>
+            </div>
+
+            <div class="puzzle-info">
+                <div class="info-item">
+                    <span class="info-label">Puzzle:</span>
+                    <span class="info-value" id="puzzleNumber">#1</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Hints:</span>
+                    <span class="info-value" id="hintsCount">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Time:</span>
+                    <span class="info-value" id="timer">00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sudoku-board" id="board"></div>
+
+        <div class="notes-mode" id="notesMode">
+            Notes Mode: OFF
+        </div>
+
+        <div class="controls" id="numberButtons"></div>
+
+        <div class="action-buttons">
+            <button class="action-btn btn-new" onclick="showNewGameDialog()">
+                <svg><path d="M8 2 L8 14 M2 8 L14 8" stroke="white" stroke-width="2"/></svg>
+                New
+            </button>
+            <button class="action-btn btn-hint" onclick="getHint()">
+                <svg><circle cx="8" cy="4" r="2" fill="white"/><path d="M8 7 L8 10" stroke="white" stroke-width="2"/><circle cx="8" cy="13" r="1" fill="white"/></svg>
+                Hint
+            </button>
+            <button class="action-btn btn-check" onclick="checkSolution()">
+                <svg><path d="M3 8 L6 11 L13 4" stroke="white" stroke-width="2" fill="none"/></svg>
+                Check
+            </button>
+            <button class="action-btn btn-notes" onclick="toggleNotesMode()">
+                <svg><path d="M3 2 L13 2 L13 14 L3 14 Z" fill="none" stroke="white" stroke-width="1"/><text x="8" y="10" text-anchor="middle" font-size="8" fill="white">N</text></svg>
+                Notes
+            </button>
+            <button class="action-btn btn-clear" onclick="clearCell()">
+                <svg><path d="M4 4 L12 12 M12 4 L4 12" stroke="white" stroke-width="2"/></svg>
+                Clear
+            </button>
+            <button class="action-btn btn-how" onclick="showHowToPlay()">
+                <svg><circle cx="8" cy="8" r="6" fill="none" stroke="white" stroke-width="2"/><circle cx="8" cy="5" r="1" fill="white"/><path d="M8 7 L8 10" stroke="white" stroke-width="2"/></svg>
+                How to Play
+            </button>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <!-- New Game Dialog -->
+    <div class="dialog-overlay" id="dialogOverlay">
+        <div class="dialog">
+            <div class="dialog-title" id="dialogTitle">New Game</div>
+            <div class="dialog-message" id="dialogMessage">
+                Start a new game? Your current progress will be lost.
+            </div>
+            <div class="dialog-buttons">
+                <button class="dialog-btn dialog-btn-cancel" onclick="closeDialog()">Cancel</button>
+                <button class="dialog-btn dialog-btn-ok" onclick="confirmNewGame()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Dialog -->
+    <div class="dialog-overlay" id="leaderboardOverlay">
+        <div class="dialog">
+            <div class="dialog-title">🏆 Leaderboard</div>
+            <div class="leaderboard-tabs">
+                <button class="leaderboard-tab active" onclick="showLeaderboardTab('easy')">Easy</button>
+                <button class="leaderboard-tab" onclick="showLeaderboardTab('medium')">Medium</button>
+                <button class="leaderboard-tab" onclick="showLeaderboardTab('hard')">Hard</button>
+                <button class="leaderboard-tab" onclick="showLeaderboardTab('expert')">Expert</button>
+            </div>
+            <div class="leaderboard-content" id="leaderboardContent">
+                <!-- Content will be populated dynamically -->
+            </div>
+            <div class="dialog-buttons">
+                <button class="dialog-btn dialog-btn-ok" onclick="closeLeaderboard()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Play Dialog -->
+    <div class="dialog-overlay" id="howToPlayOverlay">
+        <div class="dialog how-to-play">
+            <div class="dialog-title">How to Play Mini Sudoku</div>
+            
+            <div class="rules-section">
+                <div class="rules-title">
+                    <svg width="16" height="16" fill="#4a90e2">
+                        <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <text x="8" y="11" text-anchor="middle" font-size="10">1</text>
+                    </svg>
+                    Basic Rules
+                </div>
+                <div class="rules-content">
+                    <ul class="rules-list">
+                        <li>Fill the 6×6 grid with numbers 1-6</li>
+                        <li>Each row must contain all numbers 1-6</li>
+                        <li>Each column must contain all numbers 1-6</li>
+                        <li>Each 2×3 block must contain all numbers 1-6</li>
+                        <li>No number can repeat in any row, column, or block</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="rules-section">
+                <div class="rules-title">
+                    <svg width="16" height="16" fill="#4a90e2">
+                        <rect x="2" y="2" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <rect x="5" y="5" width="6" height="6" fill="currentColor" opacity="0.3"/>
+                    </svg>
+                    Grid Structure
+                </div>
+                <div class="rules-content">
+                    The grid is divided into 6 blocks of 2×3 cells:
+                    <div class="example-grid">
+                        <div class="example-cell highlight">1</div>
+                        <div class="example-cell highlight">2</div>
+                        <div class="example-cell highlight">3</div>
+                        <div class="example-cell">4</div>
+                        <div class="example-cell">5</div>
+                        <div class="example-cell">6</div>
+                        <div class="example-cell highlight">4</div>
+                        <div class="example-cell highlight">5</div>
+                        <div class="example-cell highlight">6</div>
+                        <div class="example-cell">1</div>
+                        <div class="example-cell">2</div>
+                        <div class="example-cell">3</div>
+                        <div class="example-cell">2</div>
+                        <div class="example-cell">3</div>
+                        <div class="example-cell">4</div>
+                        <div class="example-cell highlight">5</div>
+                        <div class="example-cell highlight">6</div>
+                        <div class="example-cell highlight">1</div>
+                        <div class="example-cell">3</div>
+                        <div class="example-cell">4</div>
+                        <div class="example-cell">5</div>
+                        <div class="example-cell highlight">6</div>
+                        <div class="example-cell highlight">1</div>
+                        <div class="example-cell highlight">2</div>
+                        <div class="example-cell">6</div>
+                        <div class="example-cell">1</div>
+                        <div class="example-cell">2</div>
+                        <div class="example-cell">3</div>
+                        <div class="example-cell">4</div>
+                        <div class="example-cell">5</div>
+                        <div class="example-cell">4</div>
+                        <div class="example-cell">5</div>
+                        <div class="example-cell">6</div>
+                        <div class="example-cell">1</div>
+                        <div class="example-cell">2</div>
+                        <div class="example-cell">3</div>
+                    </div>
+                    Highlighted cells show 2×3 blocks.
+                </div>
+            </div>
+
+            <div class="rules-section">
+                <div class="rules-title">
+                    <svg width="16" height="16" fill="#4a90e2">
+                        <path d="M8 2 L8 14 M2 8 L14 8" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="8" cy="8" r="2" fill="currentColor"/>
+                    </svg>
+                    How to Play
+                </div>
+                <div class="rules-content">
+                    <ul class="rules-list">
+                        <li>Click empty cell to select</li>
+                        <li>Click number (1-6) to place</li>
+                        <li>Gray cells are fixed</li>
+                        <li>Use Notes for reminders</li>
+                        <li>Hint reveals one answer</li>
+                        <li>Check verifies solution</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="rules-section">
+                <div class="rules-title">
+                    <svg width="16" height="16" fill="#4a90e2">
+                        <rect x="2" y="5" width="12" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="5" cy="9" r="1" fill="currentColor"/>
+                        <circle cx="8" cy="9" r="1" fill="currentColor"/>
+                        <circle cx="11" cy="9" r="1" fill="currentColor"/>
+                    </svg>
+                    Keyboard Shortcuts
+                </div>
+                <div class="keyboard-shortcuts">
+                    <div class="shortcut-item">
+                        <span>Place number:</span>
+                        <span class="shortcut-key">1-6</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span>Clear cell:</span>
+                        <span class="shortcut-key">Del</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span>Toggle notes:</span>
+                        <span class="shortcut-key">N</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span>Navigate:</span>
+                        <span class="shortcut-key">↑↓←→</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rules-section">
+                <div class="rules-title">
+                    <svg width="16" height="16" fill="#4a90e2">
+                        <path d="M8 2 L12 6 L10 8 L8 6 L6 8 L4 6 L8 2" fill="currentColor"/>
+                        <rect x="7" y="8" width="2" height="6" fill="currentColor"/>
+                    </svg>
+                    Difficulty Levels
+                </div>
+                <div class="rules-content">
+                    <ul class="rules-list">
+                        <li><strong style="color: #27ae60;">Easy:</strong> More given numbers</li>
+                        <li><strong style="color: #f39c12;">Medium:</strong> Balanced challenge</li>
+                        <li><strong style="color: #e74c3c;">Hard:</strong> Fewer clues</li>
+                        <li><strong style="color: #8e44ad;">Expert:</strong> Minimal clues</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="dialog-buttons">
+                <button class="dialog-btn dialog-btn-ok" onclick="closeHowToPlay()">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let board = [];
+        let solution = [];
+        let givenGrid = [];
+        let selectedCell = null;
+        let notesMode = false;
+        let notes = {};
+        let hintsUsed = 0;
+        let currentDifficulty = 'easy';
+        let currentPuzzleNumber = 1;
+        let hintedCells = new Set();
+        let userFilledCells = new Set();
+        let startTime = null;
+        let timerInterval = null;
+        let currentLeaderboardTab = 'easy';
+
+        // Completion/score flags to avoid duplicates and timer restart after reload
+        let gameCompleted = false;
+        let completionTimeMs = 0;
+        let scoreRecorded = false;
+
+        // Load saved state on page load
+        window.addEventListener('load', () => {
+            loadGameState();
+        });
+
+        // Save state before page unload
+        window.addEventListener('beforeunload', () => {
+            saveGameState();
+        });
+
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function saveGameState() {
+            const elapsed = gameCompleted
+                ? completionTimeMs
+                : (startTime ? Date.now() - startTime : 0);
+
+            const gameState = {
+                board,
+                solution,
+                givenGrid,
+                selectedCell,
+                notesMode,
+                notes,
+                hintsUsed,
+                currentDifficulty,
+                currentPuzzleNumber,
+                hintedCells: Array.from(hintedCells),
+                userFilledCells: Array.from(userFilledCells),
+                startTime,
+                elapsedTime: elapsed,
+                gameCompleted,
+                completionTimeMs,
+                scoreRecorded
+            };
+            localStorage.setItem('miniSudokuState', JSON.stringify(gameState));
+        }
+
+        function loadGameState() {
+            const savedState = localStorage.getItem('miniSudokuState');
+            if (savedState) {
+                try {
+                    const gameState = JSON.parse(savedState);
+                    board = gameState.board || [];
+                    solution = gameState.solution || [];
+                    givenGrid = gameState.givenGrid || [];
+                    selectedCell = gameState.selectedCell;
+                    notesMode = gameState.notesMode || false;
+                    notes = gameState.notes || {};
+                    hintsUsed = gameState.hintsUsed || 0;
+                    currentDifficulty = gameState.currentDifficulty || 'easy';
+                    currentPuzzleNumber = gameState.currentPuzzleNumber || 1;
+                    hintedCells = new Set(gameState.hintedCells || []);
+                    userFilledCells = new Set(gameState.userFilledCells || []);
+                    gameCompleted = !!gameState.gameCompleted;
+                    completionTimeMs = gameState.completionTimeMs || 0;
+                    scoreRecorded = !!gameState.scoreRecorded;
+
+                    // Restore timer
+                    stopTimer();
+                    if (gameCompleted) {
+                        // Do not start timer for completed game after reload
+                        const finalMs = completionTimeMs || gameState.elapsedTime || 0;
+                        document.getElementById('timer').textContent = formatTime(finalMs);
+                        startTime = null;
+                    } else if (gameState.elapsedTime) {
+                        startTime = Date.now() - gameState.elapsedTime;
+                        startTimer();
+                    }
+
+                    // Update UI
+                    document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+                    document.querySelector(`.difficulty-btn.${currentDifficulty}`).classList.add('active');
+                    document.getElementById('puzzleNumber').textContent = `#${currentPuzzleNumber}`;
+                    document.getElementById('hintsCount').textContent = hintsUsed;
+                    
+                    if (notesMode) {
+                        document.getElementById('notesMode').className = 'notes-mode active';
+                        document.getElementById('notesMode').textContent = 'Notes Mode: ON';
+                    } else {
+                        document.getElementById('notesMode').className = 'notes-mode';
+                        document.getElementById('notesMode').textContent = 'Notes Mode: OFF';
+                    }
+
+                    renderBoard();
+                    renderNumberButtons();
+                    
+                    if (!gameCompleted && selectedCell) {
+                        selectCell(selectedCell.row, selectedCell.col);
+                    } else {
+                        selectedCell = null;
+                    }
+                } catch (e) {
+                    console.error('Failed to load saved state:', e);
+                    initGame();
+                }
+            } else {
+                initGame();
+            }
+        }
+
+        function saveScore(time, hints) {
+            const scores = JSON.parse(localStorage.getItem('miniSudokuScores') || '{}');
+            if (!scores[currentDifficulty]) {
+                scores[currentDifficulty] = [];
+            }
+            
+            scores[currentDifficulty].push({
+                time,
+                hints,
+                date: new Date().toISOString()
+            });
+            
+            // Keep only top 10 scores per difficulty
+            scores[currentDifficulty].sort((a, b) => {
+                // Sort by time first, then by hints used
+                if (a.time !== b.time) return a.time - b.time;
+                return a.hints - b.hints;
+            });
+            scores[currentDifficulty] = scores[currentDifficulty].slice(0, 10);
+            
+            localStorage.setItem('miniSudokuScores', JSON.stringify(scores));
+        }
+
+        function showLeaderboard() {
+            currentLeaderboardTab = currentDifficulty;
+            const overlay = document.getElementById('leaderboardOverlay');
+            overlay.classList.add('show');
+            showLeaderboardTab(currentLeaderboardTab);
+        }
+
+        function closeLeaderboard() {
+            const overlay = document.getElementById('leaderboardOverlay');
+            overlay.classList.remove('show');
+        }
+
+        function showLeaderboardTab(difficulty) {
+            currentLeaderboardTab = difficulty;
+
+            // Update active tab reliably (avoid using event.target)
+            document.querySelectorAll('.leaderboard-tab').forEach(tab => {
+                if (tab.textContent.trim().toLowerCase() === difficulty) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            const scores = JSON.parse(localStorage.getItem('miniSudokuScores') || '{}');
+            const content = document.getElementById('leaderboardContent');
+            
+            if (!scores[difficulty] || scores[difficulty].length === 0) {
+                content.innerHTML = '<div class="no-scores">No scores yet for this difficulty.<br>Complete a puzzle to set the first record!</div>';
+                return;
+            }
+            
+            content.innerHTML = scores[difficulty].map((score, index) => {
+                const timeStr = formatTime(score.time);
+                const hintsStr = score.hints > 0 ? `(${score.hints} hints)` : '(no hints)';
+                
+                return `
+                    <div class="leaderboard-entry">
+                        <div>
+                            <span class="leaderboard-rank">#${index + 1}</span>
+                            <span class="leaderboard-time">${timeStr}</span>
+                        </div>
+                        <span class="leaderboard-hints">${hintsStr}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function startTimer() {
+            if (gameCompleted) {
+                return; // Do not start timer when game is already completed
+            }
+            if (!startTime) {
+                startTime = Date.now();
+            }
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timer').textContent =
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function getBlockIndex(row, col) {
+            const blockRow = Math.floor(row / 2);
+            const blockCol = Math.floor(col / 3);
+            return blockRow * 2 + blockCol;
+        }
+
+        function isValidMove(row, col, num) {
+            // Row
+            for (let c = 0; c < 6; c++) {
+                if (board[row][c] === num) return false;
+            }
+            // Col
+            for (let r = 0; r < 6; r++) {
+                if (board[r][col] === num) return false;
+            }
+            // Block 2x3
+            const blockStartRow = Math.floor(row / 2) * 2;
+            const blockStartCol = Math.floor(col / 3) * 3;
+            for (let r = blockStartRow; r < blockStartRow + 2; r++) {
+                for (let c = blockStartCol; c < blockStartCol + 3; c++) {
+                    if (board[r][c] === num) return false;
+                }
+            }
+            return true;
+        }
+
+        // Utility helpers
+        function deepCopyGrid(g) {
+            return g.map(row => [...row]);
+        }
+
+        function shuffle(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        // Build a valid base 6x6 Sudoku solution (2x3 blocks)
+        function buildBaseSolution() {
+            const base = [];
+            const rowShifts = [0, 3, 1, 4, 2, 5];
+            for (let r = 0; r < 6; r++) {
+                const row = [];
+                for (let c = 0; c < 6; c++) {
+                    const val = ((c + rowShifts[r]) % 6) + 1;
+                    row.push(val);
+                }
+                base.push(row);
+            }
+            return base;
+        }
+
+        // Permute rows/cols/digits while keeping validity
+        function permuteSolution(sol) {
+            let grid = deepCopyGrid(sol);
+
+            // Row block order (three blocks: [0,1], [2,3], [4,5])
+            const rowBlocks = [[0,1],[2,3],[4,5]];
+            const permRowBlocks = shuffle(rowBlocks);
+            const finalRowOrder = [];
+            for (const block of permRowBlocks) {
+                if (Math.random() < 0.5) {
+                    finalRowOrder.push(block[1], block[0]);
+                } else {
+                    finalRowOrder.push(block[0], block[1]);
+                }
+            }
+            grid = finalRowOrder.map(idx => grid[idx]);
+
+            // Column blocks ([0,1,2], [3,4,5]) and internal permutations
+            const colBlocks = [[0,1,2],[3,4,5]];
+            const permColBlocks = shuffle(colBlocks);
+            const leftPerm = shuffle([0,1,2]);
+            const rightPerm = shuffle([0,1,2]);
+
+            const buildColOrder = (block, perm) => perm.map(i => block[i]);
+            const finalColOrder = [
+                ...buildColOrder(permColBlocks[0], permColBlocks[0][0] < 3 ? leftPerm : rightPerm),
+                ...buildColOrder(permColBlocks[1], permColBlocks[1][0] < 3 ? rightPerm : leftPerm)
+            ];
+
+            const newGrid = [];
+            for (let r = 0; r < 6; r++) {
+                const newRow = [];
+                for (let ci = 0; ci < 6; ci++) {
+                    const c = finalColOrder[ci];
+                    newRow.push(grid[r][c]);
+                }
+                newGrid.push(newRow);
+            }
+
+            // Optional digit permutation
+            const digits = [1,2,3,4,5,6];
+            const permDigits = shuffle(digits);
+            const map = {};
+            digits.forEach((d, i) => map[d] = permDigits[i]);
+
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 6; c++) {
+                    newGrid[r][c] = map[newGrid[r][c]];
+                }
+            }
+
+            return newGrid;
+        }
+
+        // Generate givens from a valid solution
+        function generateGiven(sol, difficulty) {
+            const keepCounts = {
+                easy: 24,     // 24 clues
+                medium: 20,   // 20 clues
+                hard: 16,     // 16 clues
+                expert: 12    // 12 clues
+            };
+            const keep = keepCounts[difficulty] || 20;
+
+            // Start with full solution as givens
+            const given = deepCopyGrid(sol);
+
+            // Count trackers
+            const rowCount = Array(6).fill(6);
+            const colCount = Array(6).fill(6);
+            const blockCount = Array(6).fill(6);
+
+            // Positions list
+            const positions = [];
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 6; c++) {
+                    positions.push({ r, c });
+                }
+            }
+            const order = shuffle(positions);
+
+            // Minimum clues per unit to avoid empty rows/cols/blocks
+            const rowMin = 1;
+            const colMin = 1;
+            const blockMin = 1;
+
+            let cellsKept = 36;
+
+            // Remove while respecting minima
+            for (const pos of order) {
+                if (cellsKept <= keep) break;
+                const r = pos.r, c = pos.c;
+                const b = getBlockIndex(r, c);
+                if (given[r][c] === 0) continue;
+
+                if (rowCount[r] - 1 >= rowMin &&
+                    colCount[c] - 1 >= colMin &&
+                    blockCount[b] - 1 >= blockMin) {
+                    given[r][c] = 0;
+                    rowCount[r]--;
+                    colCount[c]--;
+                    blockCount[b]--;
+                    cellsKept--;
+                }
+            }
+
+            // If we still have more than desired keep (due to constraints), relax block minima
+            if (cellsKept > keep) {
+                for (const pos of order) {
+                    if (cellsKept <= keep) break;
+                    const r = pos.r, c = pos.c;
+                    if (given[r][c] === 0) continue;
+                    if (rowCount[r] - 1 >= rowMin && colCount[c] - 1 >= colMin) {
+                        given[r][c] = 0;
+                        rowCount[r]--;
+                        colCount[c]--;
+                        cellsKept--;
+                    }
+                }
+            }
+
+            return given;
+        }
+
+        // Validate that given cells match solution (repair if needed)
+        function validatePuzzle(given, sol) {
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 6; c++) {
+                    if (given[r][c] !== 0 && given[r][c] !== sol[r][c]) {
+                        // Fix mismatch by aligning to solution
+                        given[r][c] = sol[r][c];
+                    }
+                }
+            }
+        }
+
+        function selectDifficulty(difficulty) {
+            currentDifficulty = difficulty;
+            currentPuzzleNumber = 1;
+            hintedCells.clear();
+            userFilledCells.clear();
+            document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.difficulty-btn.${difficulty}`).classList.add('active');
+            initGame();
+        }
+
+        function initGame() {
+            // Build a fresh valid solution and derive givens for the current difficulty
+            solution = permuteSolution(buildBaseSolution());
+            givenGrid = generateGiven(solution, currentDifficulty);
+            validatePuzzle(givenGrid, solution);
+
+            board = deepCopyGrid(givenGrid);
+            notes = {};
+            hintsUsed = 0;
+            hintedCells.clear();
+            userFilledCells.clear();
+
+            // Reset completion/timer flags
+            gameCompleted = false;
+            completionTimeMs = 0;
+            scoreRecorded = false;
+            stopTimer();
+            startTime = null;
+            document.getElementById('timer').textContent = '00:00';
+
+            document.getElementById('puzzleNumber').textContent = `#${currentPuzzleNumber}`;
+            document.getElementById('hintsCount').textContent = '0';
+
+            renderBoard();
+            renderNumberButtons();
+            startTimer();
+
+            selectedCell = null;
+            document.getElementById('message').className = 'message';
+            document.getElementById('notesMode').className = 'notes-mode';
+            document.getElementById('notesMode').textContent = 'Notes Mode: OFF';
+            notesMode = false;
+
+            saveGameState();
+        }
+
+        function renderBoard() {
+            const boardElement = document.getElementById('board');
+            boardElement.innerHTML = '';
+
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'sudoku-cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+
+                    // Block highlight
+                    const blockIndex = getBlockIndex(row, col);
+                    if (blockIndex % 2 === 1) {
+                        cell.classList.add('block-highlight');
+                    }
+
+                    // Thicker borders for 2x3 blocks
+                    cell.style.borderTop = row % 2 === 0 && row > 0 ? '2px solid #333' : '1px solid #ddd';
+                    cell.style.borderLeft = col % 3 === 0 && col > 0 ? '2px solid #333' : '1px solid #ddd';
+                    if (row === 0) cell.style.borderTop = '1px solid #333';
+                    if (col === 0) cell.style.borderLeft = '1px solid #333';
+                    if (row === 5) cell.style.borderBottom = '1px solid #333';
+                    if (col === 5) cell.style.borderRight = '1px solid #333';
+
+                    if (board[row][col] !== 0) {
+                        cell.textContent = board[row][col];
+                        if (givenGrid[row][col] !== 0) {
+                            cell.classList.add('given');
+                        } else if (hintedCells.has(`${row}-${col}`)) {
+                            cell.classList.add('hint-cell');
+                        } else if (userFilledCells.has(`${row}-${col}`)) {
+                            cell.classList.add('user-filled');
+                        }
+                    }
+
+                    // Notes
+                    const notesContainer = document.createElement('div');
+                    notesContainer.className = 'cell-notes';
+                    const cellKey = `${row}-${col}`;
+                    if (notes[cellKey] && board[row][col] === 0) {
+                        for (let i = 1; i <= 6; i++) {
+                            const noteDiv = document.createElement('div');
+                            noteDiv.className = 'note-number';
+                            if (notes[cellKey].includes(i)) {
+                                noteDiv.textContent = i;
+                            }
+                            notesContainer.appendChild(noteDiv);
+                        }
+                    }
+                    cell.appendChild(notesContainer);
+
+                    cell.addEventListener('click', () => selectCell(row, col));
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        function renderNumberButtons() {
+            const container = document.getElementById('numberButtons');
+            container.innerHTML = '';
+            for (let i = 1; i <= 6; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'number-btn';
+                btn.textContent = i;
+                btn.onclick = () => placeNumber(i);
+                container.appendChild(btn);
+            }
+        }
+
+        function selectCell(row, col) {
+            const cells = document.querySelectorAll('.sudoku-cell');
+            cells.forEach(cell => cell.classList.remove('selected'));
+
+            if (givenGrid[row][col] !== 0) return;
+            if (gameCompleted) return; // prevent selecting after completion
+
+            selectedCell = { row, col };
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.classList.add('selected');
+        }
+
+        function placeNumber(num) {
+            if (!selectedCell) return;
+
+            const { row, col } = selectedCell;
+            const cellKey = `${row}-${col}`;
+
+            if (notesMode) {
+                if (!notes[cellKey]) notes[cellKey] = [];
+                const index = notes[cellKey].indexOf(num);
+                if (index > -1) notes[cellKey].splice(index, 1);
+                else {
+                    notes[cellKey].push(num);
+                    notes[cellKey].sort();
+                }
+                board[row][col] = 0;
+            } else {
+                board[row][col] = num;
+                delete notes[cellKey];
+                hintedCells.delete(cellKey);
+                userFilledCells.add(cellKey);
+            }
+
+            renderBoard();
+
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.classList.add('selected');
+
+            checkErrors();
+            saveGameState();
+        }
+
+        function clearCell() {
+            if (!selectedCell) return;
+            const { row, col } = selectedCell;
+            if (givenGrid[row][col] !== 0) return;
+
+            const cellKey = `${row}-${col}`;
+            board[row][col] = 0;
+            delete notes[cellKey];
+            hintedCells.delete(cellKey);
+            userFilledCells.delete(cellKey);
+            renderBoard();
+            selectCell(row, col);
+            saveGameState();
+        }
+
+        function checkErrors() {
+            const cells = document.querySelectorAll('.sudoku-cell');
+            cells.forEach(cell => cell.classList.remove('error'));
+
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (board[row][col] !== 0) {
+                        const num = board[row][col];
+                        const temp = board[row][col];
+                        board[row][col] = 0;
+
+                        // Error if violates Sudoku or if not the solution's number
+                        if (!isValidMove(row, col, num) || num !== solution[row][col]) {
+                            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                            if (cell && !cell.classList.contains('given')) {
+                                cell.classList.add('error');
+                            }
+                        }
+                        board[row][col] = temp;
+                    }
+                }
+            }
+        }
+
+        function recordCompletion() {
+            if (gameCompleted) return; // already recorded
+            stopTimer();
+            gameCompleted = true;
+            completionTimeMs = startTime ? Date.now() - startTime : 0;
+
+            const messageElement = document.getElementById('message');
+            const timeStr = formatTime(completionTimeMs);
+            const hintText = hintsUsed > 0 ? ` with ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''}` : '';
+            messageElement.textContent = `🎉 Completed in ${timeStr}${hintText}!`;
+            messageElement.className = 'message success';
+
+            if (!scoreRecorded) {
+                saveScore(completionTimeMs, hintsUsed);
+                scoreRecorded = true;
+            }
+            // Reflect final time on timer display
+            document.getElementById('timer').textContent = timeStr;
+
+            saveGameState();
+
+            setTimeout(() => {
+                messageElement.className = 'message';
+            }, 3000);
+        }
+
+        function checkSolution() {
+            let isComplete = true;
+            let isCorrect = true;
+
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (board[row][col] === 0) {
+                        isComplete = false;
+                    } else if (board[row][col] !== solution[row][col]) {
+                        isCorrect = false;
+                    }
+                }
+            }
+
+            const messageElement = document.getElementById('message');
+            if (isComplete && isCorrect) {
+                recordCompletion(); // will save score only once and not restart timer
+            } else if (!isComplete) {
+                messageElement.textContent = '📝 Puzzle not complete yet.';
+                messageElement.className = 'message info';
+                setTimeout(() => {
+                    messageElement.className = 'message';
+                }, 3000);
+            } else {
+                messageElement.textContent = '❌ Some errors. Keep trying!';
+                messageElement.className = 'message error';
+                setTimeout(() => {
+                    messageElement.className = 'message';
+                }, 3000);
+            }
+        }
+
+        function getHint() {
+            if (gameCompleted) return;
+
+            const emptyCells = [];
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (board[row][col] === 0) emptyCells.push({ row, col });
+                }
+            }
+
+            if (emptyCells.length === 0) {
+                checkSolution();
+                return;
+            }
+
+            const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            board[randomCell.row][randomCell.col] = solution[randomCell.row][randomCell.col];
+            const cellKey = `${randomCell.row}-${randomCell.col}`;
+            delete notes[cellKey];
+            hintedCells.add(cellKey);
+            userFilledCells.delete(cellKey);
+            hintsUsed++;
+
+            document.getElementById('hintsCount').textContent = hintsUsed;
+
+            renderBoard();
+
+            const cell = document.querySelector(`[data-row="${randomCell.row}"][data-col="${randomCell.col}"]`);
+            if (cell) cell.classList.add('hint-cell');
+
+            // Check if puzzle is complete after hint
+            let isComplete = true;
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (board[row][col] === 0) {
+                        isComplete = false;
+                        break;
+                    }
+                }
+            }
+
+            if (isComplete) {
+                // slight delay to show hint highlight, then record completion
+                setTimeout(() => {
+                    recordCompletion();
+                }, 500);
+            }
+
+            saveGameState();
+        }
+
+        function toggleNotesMode() {
+            notesMode = !notesMode;
+            const notesModeElement = document.getElementById('notesMode');
+            if (notesMode) {
+                notesModeElement.className = 'notes-mode active';
+                notesModeElement.textContent = 'Notes Mode: ON';
+            } else {
+                notesModeElement.className = 'notes-mode';
+                notesModeElement.textContent = 'Notes Mode: OFF';
+            }
+            saveGameState();
+        }
+
+        function showNewGameDialog() {
+            const overlay = document.getElementById('dialogOverlay');
+            overlay.classList.add('show');
+        }
+
+        function closeDialog() {
+            const overlay = document.getElementById('dialogOverlay');
+            overlay.classList.remove('show');
+        }
+
+        function confirmNewGame() {
+            closeDialog();
+            currentPuzzleNumber++;
+            initGame();
+        }
+
+        function showHowToPlay() {
+            const overlay = document.getElementById('howToPlayOverlay');
+            overlay.classList.add('show');
+        }
+
+        function closeHowToPlay() {
+            const overlay = document.getElementById('howToPlayOverlay');
+            overlay.classList.remove('show');
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('dialogOverlay').classList.contains('show') ||
+                document.getElementById('howToPlayOverlay').classList.contains('show') ||
+                document.getElementById('leaderboardOverlay').classList.contains('show')) {
+                if (e.key === 'Escape') {
+                    closeDialog();
+                    closeHowToPlay();
+                    closeLeaderboard();
+                }
+                return;
+            }
+
+            if (!selectedCell) return;
+
+            if (e.key >= '1' && e.key <= '6') {
+                placeNumber(parseInt(e.key));
+            } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                clearCell();
+            } else if (e.key === 'n' || e.key === 'N') {
+                toggleNotesMode();
+            } else if (e.key === 'ArrowUp' && selectedCell.row > 0) {
+                selectCell(selectedCell.row - 1, selectedCell.col);
+            } else if (e.key === 'ArrowDown' && selectedCell.row < 5) {
+                selectCell(selectedCell.row + 1, selectedCell.col);
+            } else if (e.key === 'ArrowLeft' && selectedCell.col > 0) {
+                selectCell(selectedCell.row, selectedCell.col - 1);
+            } else if (e.key === 'ArrowRight' && selectedCell.col < 5) {
+                selectCell(selectedCell.row, selectedCell.col + 1);
+            }
+        });
+
+        // Close dialog when clicking outside
+        document.getElementById('dialogOverlay').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('dialogOverlay')) {
+                closeDialog();
+            }
+        });
+
+        document.getElementById('howToPlayOverlay').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('howToPlayOverlay')) {
+                closeHowToPlay();
+            }
+        });
+
+        document.getElementById('leaderboardOverlay').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('leaderboardOverlay')) {
+                closeLeaderboard();
+            }
+        });
+    </script>
+</body>
+</html>
