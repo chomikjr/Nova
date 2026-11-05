@@ -165,18 +165,42 @@
       bootP = (async () => {
         if (!libsOk) throw new Error('libs');
         if (!('serviceWorker' in navigator)) throw new Error('nosw');
-        await navigator.serviceWorker.register('/proxy/sw.js', { scope: '/proxy/' });
-        await navigator.serviceWorker.ready;
+        // Scramjet's database must be created by this page (with its tables) BEFORE the
+        // service worker touches it — the worker opens it without creating any tables.
+        await ensureDb();
         const { ScramjetController } = $scramjetLoadController();
         sj = new ScramjetController({
           prefix: '/proxy/scramjet/',
           files: { wasm: '/proxy/lib/scram/scramjet.wasm.wasm', all: '/proxy/lib/scram/scramjet.all.js', sync: '/proxy/lib/scram/scramjet.sync.js' }
         });
         await sj.init();
+        await navigator.serviceWorker.register('/proxy/sw.js', { scope: '/proxy/' });
+        await navigator.serviceWorker.ready;
         conn = new BareMux.BareMuxConnection('/proxy/lib/baremux/worker.js');
       })();
       bootP.catch(() => { bootP = null; });
       return bootP;
+    }
+    const STORES = ['config', 'cookies', 'redirectTrackers', 'referrerPolicies', 'publicSuffixList'];
+    function openDb() {
+      return new Promise((res, rej) => {
+        const r = indexedDB.open('$scramjet', 1);
+        r.onupgradeneeded = () => { STORES.forEach((n) => { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); }); };
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      });
+    }
+    async function ensureDb() {
+      const db = await openDb();
+      const ok = STORES.every((n) => db.objectStoreNames.contains(n)); db.close();
+      if (ok) { sessionStorage.removeItem('nova.proxy.dbfix'); return; }
+      // An older visit let the service worker create an empty database. Remove it and start clean (once).
+      if (sessionStorage.getItem('nova.proxy.dbfix')) throw new Error('The browser’s storage is stuck. Close this tab, reopen Nova and try again.');
+      sessionStorage.setItem('nova.proxy.dbfix', '1');
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.filter((r) => r.scope.includes('/proxy/')).map((r) => r.unregister()));
+      await new Promise((res) => { const d = indexedDB.deleteDatabase('$scramjet'); d.onsuccess = d.onerror = res; d.onblocked = () => setTimeout(res, 1500); });
+      location.reload();
+      await new Promise(() => {});
     }
     async function useServer() {
       const s = current(); if (!s) throw new Error('noserver');
@@ -250,9 +274,11 @@
     async function go(t, input) {
       const url = toUrl(input); if (!url) return;
       t.pending = url; t.url = url; t.title = host(url); paintTabs(); paintBar(); loading(true);
+      try { sessionStorage.setItem('nova.proxy.resume', url); } catch (e) {}
       try { await boot(); await useServer(); }
       catch (e) {
         loading(false);
+        try { sessionStorage.removeItem('nova.proxy.resume'); } catch (x) {}
         if (t.frame) { t.frame.frame.remove(); t.frame = null; }
         if (e.message === 'noserver') showErr(t, 'No server set up', 'Pick or add a Wisp server in the server menu, then try again.');
         else if (e.message === 'libs') showErr(t, 'Browser files aren’t built', 'Scramjet is installed when the site deploys (<code>npm run build:proxy</code>).');
@@ -271,6 +297,7 @@
           paintTabs(); if (t === active) paintBar();
         });
       }
+      try { sessionStorage.removeItem('nova.proxy.resume'); } catch (e) {}
       t.frame.go(url); paintBar();
     }
 
@@ -326,7 +353,8 @@
       if (active && !active.frame && !active.url) go(active, e.data.q); else newTab(e.data.q);
     });
 
-    const first = decodeURIComponent((location.hash.match(/[#&]q=([^&]*)/) || [])[1] || '');
+    const first = decodeURIComponent((location.hash.match(/[#&]q=([^&]*)/) || [])[1] || '') || sessionStorage.getItem('nova.proxy.resume') || '';
+    sessionStorage.removeItem('nova.proxy.resume');
     if (first) history.replaceState(null, '', location.pathname);
     newTab(first || null);
     if (libsOk && current()) boot().then(useServer).then(() => { paintBar(); if (active && !active.frame) showNtp(active); }).catch(() => {});
