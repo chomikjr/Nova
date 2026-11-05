@@ -22,7 +22,7 @@
   --font-os: 'Onest', system-ui, sans-serif;
 }
 
-body.os { background: #000 url('wallpapers/galaxy.jpg') center / cover no-repeat; color: var(--txt); font-family: var(--font-os); -webkit-font-smoothing: antialiased; }
+body.os { background: #000; color: var(--txt); font-family: var(--font-os); -webkit-font-smoothing: antialiased; }
 body.os .bg-vignette { background: none; }
 ::selection { background: var(--sel-deep); color: #fff; }
 :focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
@@ -239,7 +239,7 @@ body.os .toast { background: var(--panel-solid); border-color: var(--line-strong
 .boot-logo { font: 300 34px var(--font-os); letter-spacing: .02em; margin: 0; text-shadow: none; }
 .boot-bar { background: rgba(255, 255, 255, .12); }
 .boot-bar i { background: var(--txt); }
-.lock { background: rgba(0, 0, 0, .25) url('wallpapers/galaxy.jpg') center / cover; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.lock { background: rgba(4, 3, 10, .5); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); }
 .lock-time { font: 250 clamp(96px, 16vw, 200px)/1 var(--font-os); letter-spacing: -0.03em; text-shadow: 0 4px 40px rgba(0, 0, 0, .4); }
 .lock-date { font: 400 clamp(17px, 2vw, 22px) var(--font-os); letter-spacing: 0; color: var(--txt); opacity: .85; }
 .lock-hint { font: 400 14px var(--font-os); letter-spacing: 0; text-transform: none; color: var(--dim); }

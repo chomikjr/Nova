@@ -256,7 +256,8 @@
     if (!wins.size) renderHome();
   }
 
-  if (!A.store.get('theme.desktop', false)) { A.store.set('theme.desktop', true); A.store.set('os.widgets', null); if (A.bg && A.bg.presets && A.bg.presets.galaxy) A.settings.set('bg', 'galaxy'); }
+  if (!A.store.get('theme.desktop', false)) { A.store.set('theme.desktop', true); A.store.set('os.widgets', null); }
+  if (!A.store.get('theme.smoke', false)) { A.store.set('theme.smoke', true); if (A.bg && A.bg.presets && A.bg.presets.smoke) A.settings.set('bg', 'smoke'); }
 
   /* --------------------------------------------------------------- DOCK */
   const dock = $('#dock'), tip = $('#dk-tip');
