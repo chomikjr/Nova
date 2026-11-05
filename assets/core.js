@@ -1852,52 +1852,21 @@
   const rand = (r) => r();
   const PRESETS = {
     galaxy: {
-      name: 'Galaxy', scale: 0.6,
+      name: 'Galaxy', scale: 1,
+      // A still photo-style nebula (assets/wallpapers/galaxy.jpg), drawn once — no animation cost.
       setup(c, w, h, S) {
-        const r = seededRand(2026), R = Math.max(w, h);
-        const o = document.createElement('canvas'); o.width = w; o.height = h; const oc = o.getContext('2d');
-        oc.fillStyle = '#04020a'; oc.fillRect(0, 0, w, h);
-        // nebula clouds — violet, indigo and magenta-purple only
-        [['124,58,237', .22, .30, .55, .30], ['76,29,149', .78, .72, .6, .34], ['168,85,247', .62, .22, .38, .16], ['49,46,129', .18, .82, .5, .26], ['192,132,252', .48, .52, .22, .10]].forEach(([col, x, y, rad, a]) => {
-          const g = oc.createRadialGradient(w * x, h * y, 0, w * x, h * y, R * rad);
-          g.addColorStop(0, 'rgba(' + col + ',' + a + ')'); g.addColorStop(1, 'rgba(' + col + ',0)'); oc.fillStyle = g; oc.fillRect(0, 0, w, h);
-        });
-        // dust lane
-        oc.globalCompositeOperation = 'lighter';
-        for (let i = 0; i < 1400; i++) {
-          const u = rand(r), off = (rand(r) - 0.5) * (0.12 + 0.2 * rand(r));
-          const x = u * w, y = h * (0.85 - u * 0.6 + off + 0.08 * Math.sin(u * 7));
-          oc.fillStyle = 'rgba(' + (180 + rand(r) * 60 | 0) + ',' + (150 + rand(r) * 60 | 0) + ',255,' + (0.05 + rand(r) * 0.18) + ')';
-          const s = rand(r) * 1.4 + 0.3; oc.fillRect(x, y, s, s);
-        }
-        oc.globalCompositeOperation = 'source-over';
-        for (let i = 0; i < 700; i++) { oc.fillStyle = 'rgba(235,225,255,' + (0.15 + rand(r) * 0.5) + ')'; const s = rand(r) < 0.92 ? 0.8 : 1.6; oc.fillRect(rand(r) * w, rand(r) * h, s, s); }
-        S.base = o;
-        S.tw = Array.from({ length: 90 }, () => [rand(r) * w, rand(r) * h, rand(r) * 6, 0.6 + rand(r) * 1.6]);
+        S.done = false;
+        if (!PRESETS.galaxy.img) { const im = new Image(); im.src = (document.querySelector('link[href*="core.css"]') || { href: 'assets/core.css' }).href.replace(/core\.css.*$/, 'wallpapers/galaxy.jpg'); PRESETS.galaxy.img = im; }
+        const im = PRESETS.galaxy.img;
+        if (!im.complete) im.addEventListener('load', () => { S.done = false; PRESETS.galaxy.draw(c, w, h, 0, 0, S); }, { once: true });
       },
       draw(c, w, h, t, dt, S) {
-        c.drawImage(S.base, 0, 0);
-        const px = (pointer.x - 0.5), py = (pointer.y - 0.5), R = Math.min(w, h);
-        // the ribbon: a soft, slowly breathing curve of light
-        c.globalCompositeOperation = 'lighter';
-        for (let k = 0; k < 3; k++) {
-          c.beginPath();
-          for (let i = 0; i <= 60; i++) {
-            const u = i / 60;
-            const x = w * (-0.05 + u * 1.1) + px * 20 * (k + 1);
-            const y = h * (0.62 + 0.22 * Math.sin(u * 3.1 + 0.6 + t * 0.12 + k * 0.08) - 0.28 * u) + py * 14 * (k + 1);
-            i ? c.lineTo(x, y) : c.moveTo(x, y);
-          }
-          c.strokeStyle = k === 0 ? 'rgba(245,240,255,.55)' : k === 1 ? 'rgba(196,181,253,.28)' : 'rgba(139,92,246,.16)';
-          c.lineWidth = k === 0 ? Math.max(1.2, R * 0.0025) : R * (k === 1 ? 0.012 : 0.04);
-          c.shadowColor = 'rgba(167,139,250,.9)'; c.shadowBlur = k === 0 ? 18 : 0;
-          c.stroke();
-        }
-        c.shadowBlur = 0;
-        S.tw.forEach((s) => { const a = 0.25 + 0.75 * Math.abs(Math.sin(t * s[3] + s[2])); c.fillStyle = 'rgba(233,213,255,' + a + ')'; c.fillRect(s[0], s[1], 1.6, 1.6); });
-        c.globalCompositeOperation = 'source-over';
-        const v = c.createRadialGradient(w / 2, h * 0.45, R * 0.35, w / 2, h / 2, Math.max(w, h) * 0.8);
-        v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.6)'); c.fillStyle = v; c.fillRect(0, 0, w, h);
+        const im = PRESETS.galaxy.img;
+        if (S.done) return;
+        c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
+        if (!im || !im.complete || !im.naturalWidth) return;
+        const k = Math.max(w / im.naturalWidth, h / im.naturalHeight), iw = im.naturalWidth * k, ih = im.naturalHeight * k;
+        c.drawImage(im, (w - iw) / 2, (h - ih) / 2, iw, ih); S.done = true;
       }
     },
     void: {

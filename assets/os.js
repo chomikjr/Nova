@@ -15,6 +15,23 @@
   const ago = (t) => { const s = (Date.now() - t) / 1000; if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; return Math.floor(s / 86400) + 'd ago'; };
   const hueBg = (h) => { const k = ((((h || 0) % 360) + 360) % 360) / 360; return 'linear-gradient(135deg,hsl(' + Math.round(255 + k * 35) + ',78%,' + Math.round(50 + k * 16) + '%),hsl(' + Math.round(265 + k * 20) + ',72%,' + Math.round(18 + k * 10) + '%))'; };
   const TILE = 'var(--tile)';
+  /* filled app glyphs (24×24) — each app gets its own shape and shade of violet */
+  const GLYPH = {
+    games: '<path fill="#fff" d="M6 7h12a4 4 0 0 1 4 4v3.5a3 3 0 0 1-5.3 1.9L15.3 15H8.7l-1.4 1.4A3 3 0 0 1 2 14.5V11a4 4 0 0 1 4-4Zm1.2 3v1.3H6v1.4h1.2V14h1.4v-1.3h1.2v-1.4H8.6V10ZM16 10.2a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm-1.6 1.8a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Z"/>',
+    browser: '<g fill="none" stroke="#d6ccff" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></g>',
+    music: '<path fill="#fff" d="M9 17.5V6l11-2v11.5a2.5 2.5 0 1 1-1.6-2.3V7.8L10.6 9.2v8.3A2.5 2.5 0 1 1 9 17.5Z"/>',
+    achievements: '<path fill="#eee8ff" d="M7 3h10v3.5a5 5 0 0 1-4 4.9V14h3v3H8v-3h3v-2.6a5 5 0 0 1-4-4.9V3Zm-3.5 1H6v2.6A2.6 2.6 0 0 1 3.5 4Zm17 0A2.6 2.6 0 0 1 18 6.6V4h2.5ZM6 18.5h12V21H6z"/>',
+    leaderboard: '<path fill="#fff" d="M4 13h4.5v7H4zm5.75-8h4.5v15h-4.5zM15.5 9H20v11h-4.5z"/>',
+    profile: '<path fill="#fff" d="M12 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9ZM4 20c.6-3.9 3.9-6 8-6s7.4 2.1 8 6Z"/>',
+    settings: '<path fill="#e4defa" d="M10.3 2h3.4l.5 2.6c.6.2 1.2.5 1.7.9l2.5-.9 1.7 3-2 1.7a6.6 6.6 0 0 1 0 2l2 1.7-1.7 3-2.5-.9c-.5.4-1.1.7-1.7.9l-.5 2.6h-3.4l-.5-2.6a6 6 0 0 1-1.7-.9l-2.5.9-1.7-3 2-1.7a6.6 6.6 0 0 1 0-2l-2-1.7 1.7-3 2.5.9c.5-.4 1.1-.7 1.7-.9ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" transform="translate(0 1)"/>',
+    notes: '<path fill="#fff" d="M5 3h14v12l-6 6H5Zm8 12v4.2l4.2-4.2Zm-5-8v1.6h8V7Zm0 3.5v1.6h8v-1.6Z"/>',
+    request: '<path fill="#fff" d="m3 11 18-8-6.5 18-2.7-7.3Zm8.6 1.4 1.6 4.4L17.4 6.6Z"/>',
+    updates: '<path fill="#fff" d="M13.5 2 4 14h7l-1.5 8L20 10h-7Z"/>',
+    about: '<path fill="#e4defa" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm-1.2 8v7.5h2.4V10Zm1.2-4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/>',
+    admin: '<path fill="#fff" d="m3 7 4.5 3.5L12 4l4.5 6.5L21 7l-2 11H5Z"/>'
+  };
+  const SHADE = { games: '#6c4cf0', browser: '#2b1f5c', music: '#a24ad6', achievements: '#3d2b8f', leaderboard: '#5b3cc4', profile: '#7a3fc9',
+    settings: '#2e2640', notes: '#8e5be8', request: '#4b2e9e', updates: '#3a2a7a', about: '#2e2640', admin: '#5a2a86' };
 
   /* ---------------------------------------------------------------- APPS */
   const APPS = {
@@ -32,11 +49,11 @@
     admin:        { title: 'Admin', icon: 'crown', bg: TILE, w: 720, h: 660, render: renderAdmin, owner: true }
   };
   const visibleApps = () => Object.keys(APPS).filter((id) => !APPS[id].owner || A.auth.isOwner());
-  const PINNED = ['games', 'browser', 'music', 'achievements', 'leaderboard', 'profile', 'settings'];
+  const PINNED = ['games', 'browser', 'music', 'achievements', 'settings'];
   const appIco = (id, cls) => {
     const a = APPS[id];
     if (id === 'profile') { const u = A.auth.current(); if (u) return '<span class="app-ico av ' + (cls || '') + '" style="background:' + hueBg(u.hue) + '">' + esc(u.username[0].toUpperCase()) + '</span>'; }
-    return '<span class="app-ico ' + (cls || '') + '" style="background:' + a.bg + '">' + icon(a.icon) + '</span>';
+    return '<span class="app-ico ' + (cls || '') + '" style="background:' + (SHADE[id] || a.bg) + '">' + (GLYPH[id] ? '<svg viewBox="0 0 24 24" aria-hidden="true">' + GLYPH[id] + '</svg>' : icon(a.icon)) + '</span>';
   };
   const gameIco = (g, cls) => g.image
     ? '<span class="' + (cls || 'dk-thumb') + '"><img src="games/ports/_thumbs/' + g.image + '.webp" alt="" loading="lazy"></span>'
@@ -218,8 +235,8 @@
     const r = A.scores.get(g.id), m = A.meta.get();
     A.ui.modal('<h2>' + esc(g.title) + '</h2><p class="modal-sub">' + esc(g.tagline) + '</p><div style="display:grid;gap:10px">' +
       '<div class="setting-row"><span class="label">Controls</span><span>' + esc(g.controls || '—') + '</span></div>' +
-      '<div class="setting-row"><span class="label">Community</span><span>' + (function () { const t = A.scores.trendingCached()[g.id]; return t ? t.players + ' players · ' + (t.likes || 0) + ' likes' : 'Be the first to play'; })() + '</span></div>' +
-      '<div class="setting-row"><span class="label">You’ve played</span><span>' + r.plays + ' times · ' + A.ui.fmtTime(r.time) + '</span></div>' +
+      '<div class="setting-row"><span class="label">Community</span><span>' + (function () { const t = A.scores.trendingCached()[g.id]; return t ? t.players + ' players, ' + (t.likes || 0) + ' likes' : 'Be the first to play'; })() + '</span></div>' +
+      '<div class="setting-row"><span class="label">You’ve played</span><span>' + r.plays + ' times, ' + A.ui.fmtTime(r.time) + '</span></div>' +
       (g.original ? '<div class="setting-row"><span class="label">Best score</span><span>' + r.best.toLocaleString() + '</span></div><div class="setting-row"><span class="label">Made by</span><span>Nova Arcade</span></div>'
         : '<div class="setting-row"><span class="label">Made by</span><span>' + esc(g.author) + '</span></div><div class="setting-row"><span class="label">License</span><span class="badge">' + esc(g.license) + '</span></div>' +
           '<div class="setting-row"><span class="label">Source</span><a href="https://github.com/' + esc(g.repo) + '" target="_blank" rel="noopener">github.com/' + esc(g.repo) + '</a></div>') +
@@ -239,7 +256,7 @@
     if (!wins.size) renderHome();
   }
 
-  if (!A.store.get('theme.galaxy', false)) { A.store.set('theme.galaxy', true); if (A.bg && A.bg.presets && A.bg.presets.galaxy) A.settings.set('bg', 'galaxy'); }
+  if (!A.store.get('theme.desktop', false)) { A.store.set('theme.desktop', true); A.store.set('os.widgets', null); if (A.bg && A.bg.presets && A.bg.presets.galaxy) A.settings.set('bg', 'galaxy'); }
 
   /* --------------------------------------------------------------- DOCK */
   const dock = $('#dock'), tip = $('#dk-tip');
@@ -247,14 +264,12 @@
     const running = [...wins.values()].filter((w) => w.opts.game);
     const btn = (key, inner, label, cls) => '<button class="dk ' + (cls || '') + '" data-dk="' + key + '" aria-label="' + esc(label) + '" data-tip="' + esc(label) + '">' + inner + '</button>';
     dock.innerHTML =
-      '<div class="tb-left">' + btn('start', '<span class="app-ico tb-logo">' + icon('nova') + '</span>', 'Start', 'dk-start') +
-      '<button class="tb-search" data-dk="search" aria-label="Search">' + icon('search') + '<span>Search games, apps or the web</span><kbd>/</kbd></button></div>' +
-      '<div class="tb-mid">' +
-      '<button class="dk" data-dk="library" aria-label="All games" data-tip="All games"><span class="app-ico tb-plain">' + icon('grid') + '</span></button>' +
+      '<div class="tb-mid">' + btn('start', '<span class="app-ico" style="background:#6c4cf0"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg></span>', 'Start', 'dk-start') +
+      '<button class="tb-search" data-dk="search" aria-label="Search">' + icon('search') + '<span>Search</span></button>' +
       PINNED.map((id) => { const w = wins.get('app:' + id); return btn('app:' + id, appIco(id), APPS[id].title, (w ? 'is-open' : '') + (active === 'app:' + id ? ' is-active' : '')); }).join('') +
-      (running.length ? '<span class="dock-sep"></span>' + running.map((w) => btn(w.key, gameIco(w.opts.game), w.opts.game.title, 'is-open' + (active === w.key ? ' is-active' : ''))).join('') : '') +
+      running.map((w) => btn(w.key, gameIco(w.opts.game), w.opts.game.title, 'is-open' + (active === w.key ? ' is-active' : ''))).join('') +
       '</div><div class="tb-right">' +
-      (A.settings.get('showFps') ? '<div class="fps hide-sm" aria-label="Frames per second"><span id="fps">60</span><small>FPS</small></div>' : '') +
+      (A.settings.get('showFps') ? '<div class="fps hide-sm" aria-label="Frames per second"><span id="fps">60</span>&nbsp;<small>fps</small></div>' : '') +
       '<button class="dk tb-tray hide-sm" data-dk="fullscreen" aria-label="Full screen" data-tip="Full screen">' + icon('fullscreen') + '</button>' +
       '<button class="dk tb-tray dk-bell" data-dk="notifs" aria-label="Notifications" data-tip="Notifications">' + icon('bell') + (unread() ? '<span class="dk-badge">' + Math.min(99, unread()) + '</span>' : '') + '</button>' +
       '<div class="dk-clock" id="dk-clock" role="button" tabindex="0" data-dk="notifs"></div></div>';
@@ -282,10 +297,10 @@
   function tickClock() {
     const d = new Date(), h24 = A.settings.get('clock24');
     const time = d.toLocaleTimeString([], { hour: h24 ? '2-digit' : 'numeric', minute: '2-digit', hour12: !h24 });
-    const c = $('#dk-clock'); if (c) c.innerHTML = '<b>' + time + '</b><span>' + d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + '</span>';
-    const day = $('#os-day'), wd = d.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+    const c = $('#dk-clock'); if (c) c.innerHTML = '<b>' + time + '</b><span>' + d.toLocaleDateString() + '</span>';
+    const day = $('#os-day'), wd = d.toLocaleDateString('en-US', { weekday: 'long' });
     if (day && day.textContent !== wd) day.textContent = wd;
-    const dt = $('#os-date'); if (dt) dt.innerHTML = '<b>' + d.toLocaleDateString([], { month: 'long', day: 'numeric' }) + '</b><span>' + time + '</span><span class="os-greet">' + greeting() + '</span><button class="btn btn-sm btn-ghost wg-edit-btn" id="wg-edit-btn">' + (editing ? icon('check') + 'Done' : icon('settings') + 'Customize') + '</button>';
+    const dt = $('#os-date'); if (dt) dt.innerHTML = '<b>' + time + '</b><span>' + d.toLocaleDateString([], { month: 'long', day: 'numeric' }) + '</span>';
   }
   function greeting() { const h = new Date().getHours(), u = A.auth.current(); return (h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening') + (u ? ', ' + esc(u.username) : '') + '.'; }
   setInterval(tickClock, 1000 * 15);
@@ -317,7 +332,7 @@
     const u = A.auth.current(), m = A.meta.get(), lv = A.meta.levelInfo(m.xp);
     lockEl = A.ui.el('<div class="lock" role="dialog" aria-label="Lock screen"><div class="lock-top"><div class="lock-time" id="lock-time"></div><div class="lock-date" id="lock-date"></div></div>' +
       '<div class="lock-bottom"><span class="avatar" style="width:64px;height:64px;font-size:26px;border-radius:20px;background:' + (u ? hueBg(u.hue) : 'var(--tile)') + '">' + (u ? esc(u.username[0].toUpperCase()) : icon('user').replace('<svg', '<svg width="28" height="28"')) + '</span>' +
-      '<b style="font-family:var(--font-os);font-weight:500;font-size:22px">' + (u ? esc(u.username) : 'Guest') + '</b><span style="color:var(--dim);font-size:14px">Level ' + lv.level + ' · ' + lv.title + (m.streak.count > 1 ? ' · ' + m.streak.count + '-day streak' : '') + '</span>' +
+      '<b style="font-family:var(--font-os);font-weight:500;font-size:22px">' + (u ? esc(u.username) : 'Guest') + '</b><span style="color:var(--dim);font-size:14px">Level ' + lv.level + ', ' + lv.title + (m.streak.count > 1 ? ', ' + m.streak.count + '-day streak' : '') + '</span>' +
       '<button class="btn btn-primary btn-lg lock-go" style="margin-top:6px">' + icon('sparkles') + 'Enter Nova</button><span class="lock-hint">Click, tap or press any key</span></div></div>');
     document.body.appendChild(lockEl);
     const paint = () => { const d = new Date(), h24 = A.settings.get('clock24'); const t = $('#lock-time'), dt = $('#lock-date'); if (!t) return; t.textContent = d.toLocaleTimeString([], { hour: h24 ? '2-digit' : 'numeric', minute: '2-digit', hour12: !h24 }).replace(/\s?[AP]M/i, ''); dt.textContent = d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }); };
@@ -346,14 +361,14 @@
     const recent = m.recent.map((r) => byId(r.id)).filter(Boolean).slice(0, 4);
     start.innerHTML =
       '<div class="start-user">' + (u ? '<span class="avatar" style="background:' + hueBg(u.hue) + '">' + esc(u.username[0].toUpperCase()) + '</span>' : '<span class="avatar" style="background:var(--tile)">' + icon('user').replace('<svg', '<svg width="22" height="22"') + '</span>') +
-      '<div style="flex:1;min-width:0"><b>' + (u ? esc(u.username) : 'Guest') + '</b><div style="font-size:13px;color:var(--dim)">Level ' + lv.level + ' · ' + lv.title + ' · ' + m.xp.toLocaleString() + ' XP</div><div class="bar" style="margin-top:6px;height:5px"><i style="width:' + (lv.pct * 100) + '%"></i></div></div>' +
+      '<div style="flex:1;min-width:0"><b>' + (u ? esc(u.username) : 'Guest') + '</b><div style="font-size:13px;color:var(--dim)">Level ' + lv.level + ', ' + lv.title + ', ' + m.xp.toLocaleString() + ' XP</div><div class="bar" style="margin-top:6px;height:5px"><i style="width:' + (lv.pct * 100) + '%"></i></div></div>' +
       (u ? '<button class="btn btn-sm" data-st="profile">' + icon('user') + 'Profile</button>' : '<button class="btn btn-primary btn-sm" data-st="signup">' + icon('user') + 'Sign up</button>') + '</div>' +
       '<label class="search-box"><span class="sr-only">Search</span>' + icon('search') + '<input class="input" id="start-q" placeholder="Search games and apps" autocomplete="off"></label>' +
       '<div id="start-res" class="start-list" hidden></div>' +
       '<div id="start-main" style="display:grid;gap:16px"><div><div class="os-label" style="margin-bottom:8px">Apps</div><div class="start-apps">' +
       visibleApps().map((id) => '<button class="sa" data-app="' + id + '">' + appIco(id) + '<span>' + esc(APPS[id].title.replace(' & Credits', '').replace('Request a Game', 'Request')) + '</span></button>').join('') + '</div></div>' +
       '<div><div class="os-label" style="margin-bottom:8px">' + (recent.length ? 'Recent' : 'Popular') + '</div><div class="start-list">' +
-      (recent.length ? recent : LIVE.filter((g) => g.popular).slice(0, 4)).map((g) => '<button class="sl" data-game="' + g.id + '">' + gameIco(g) + '<span><b>' + esc(g.title) + '</b><small>' + esc(g.tags.join(' · ')) + '</small></span></button>').join('') + '</div></div></div>' +
+      (recent.length ? recent : LIVE.filter((g) => g.popular).slice(0, 4)).map((g) => '<button class="sl" data-game="' + g.id + '">' + gameIco(g) + '<span><b>' + esc(g.title) + '</b><small>' + esc(g.tags.join(', ')) + '</small></span></button>').join('') + '</div></div></div>' +
       '<div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><button class="btn btn-sm btn-ghost" data-st="random">' + icon('shuffle') + 'Random game</button>' + (window.NovaCanInstall && window.NovaCanInstall() ? '<button class="btn btn-sm btn-ghost" data-st="install">' + icon('upload') + 'Install app</button>' : '') + (wins.size ? '<button class="btn btn-sm btn-ghost" data-st="closeall">' + icon('home') + 'Show desktop</button>' : '') +
       '<span style="display:flex;gap:6px"><button class="btn btn-sm btn-ghost" data-st="lock">' + icon('lock') + 'Lock</button>' + (u ? '<button class="btn btn-sm btn-ghost" data-st="logout">' + icon('power') + 'Log out</button>' : '<button class="btn btn-sm btn-ghost" data-st="login">' + icon('power') + 'Log in</button>') + '</span></div>';
     start.classList.add('is-open');
@@ -410,7 +425,7 @@
     return out;
   }
   function itemHtml(it) {
-    if (it.type === 'game') { const g = byId(it.id); return '<button class="sl" data-game="' + g.id + '">' + gameIco(g) + '<span><b>' + esc(g.title) + '</b><small>Game · ' + esc(g.tags.join(' · ')) + '</small></span></button>'; }
+    if (it.type === 'game') { const g = byId(it.id); return '<button class="sl" data-game="' + g.id + '">' + gameIco(g) + '<span><b>' + esc(g.title) + '</b><small>' + esc(g.tags.join(', ')) + '</small></span></button>'; }
     if (it.type === 'app') return '<button class="sl" data-app="' + it.id + '">' + appIco(it.id) + '<span><b>' + esc(APPS[it.id].title) + '</b><small>App</small></span></button>';
     return '<button class="sl" data-act="' + esc(it.id) + '"><span class="app-ico" style="width:38px;height:38px;border-radius:10px">' + icon(it.icon) + '</span><span><b>' + esc(it.title) + '</b><small>' + (it.icon === 'globe' ? 'Browser' : 'Action') + '</small></span></button>';
   }
@@ -468,10 +483,10 @@
   $('#os-home').addEventListener('contextmenu', (e) => {
     if (e.target.closest('.wg, input, textarea')) return;
     e.preventDefault(); closeCtx();
-    ctx = A.ui.el('<div class="ctx" role="menu">' + [['games', 'gamepad', 'Open Games'], ['random', 'shuffle', 'Random game'], ['shuffle-wall', 'image', 'Next wallpaper'], ['wallpaper', 'settings', 'Personalize'], ['search', 'search', 'Search  ( / )'], ['keys', 'keyboard', 'Shortcuts  ( ? )']].concat(wins.size ? [['closeall', 'x', 'Close all windows']] : []).map(([k, i, t]) => '<button data-cx="' + k + '" role="menuitem">' + icon(i) + t + '</button>').join('') + '</div>');
+    ctx = A.ui.el('<div class="ctx" role="menu">' + [['games', 'gamepad', 'Open Games'], ['random', 'shuffle', 'Random game'], ['widgets', 'grid', 'Edit widgets'], ['wallpaper', 'image', 'Change wallpaper'], ['search', 'search', 'Search (/)'], ['keys', 'keyboard', 'Keyboard shortcuts (?)']].concat(wins.size ? [['closeall', 'x', 'Close all windows']] : []).map(([k, i, t]) => '<button data-cx="' + k + '" role="menuitem">' + icon(i) + t + '</button>').join('') + '</div>');
     document.body.appendChild(ctx);
     ctx.style.left = Math.min(e.clientX, innerWidth - 220) + 'px'; ctx.style.top = Math.min(e.clientY, innerHeight - 240) + 'px';
-    ctx.addEventListener('click', (ev) => { const b = ev.target.closest('[data-cx]'); if (!b) return; const k = b.dataset.cx; closeCtx(); if (k === 'games') openApp('games'); else if (k === 'search') openPalette(); else if (k === 'keys') showShortcuts(); else runAction(k); });
+    ctx.addEventListener('click', (ev) => { const b = ev.target.closest('[data-cx]'); if (!b) return; const k = b.dataset.cx; closeCtx(); if (k === 'games') openApp('games'); else if (k === 'widgets') { editing = true; A.audio.sfx('toggle'); paintHome(); } else if (k === 'search') openPalette(); else if (k === 'keys') showShortcuts(); else runAction(k); });
   });
 
   /* --------------------------------------------------------------- HOME */
@@ -491,44 +506,49 @@
     const msLeft = new Date().setHours(24, 0, 0, 0) - Date.now(), hLeft = Math.floor(msLeft / 36e5), mLeft = Math.floor(msLeft % 36e5 / 6e4);
     const pct = Math.round(dl.progress / dl.goal * 100), wc = A.meta.weeklyCh();
     root.innerHTML =
-      '<section data-wg="jump" class="wg span-6 os-glass"><div class="wg-head"><span class="os-label">Jump back in!</span>' + (last ? '<span class="pill">' + icon('clock') + ago(last.at) + '</span>' : '') + '</div>' +
-      (last ? '<button class="wg-row" data-play="' + last.g.id + '"><span class="wg-ico" data-cover="' + last.g.id + '"></span><span class="wg-meta"><span class="wg-title" style="display:block">' + esc(last.g.title) + '</span><span class="wg-sub" style="display:block">Continue playing</span></span>' + icon('play', 'wg-chev') + '</button>'
-        : '<button class="wg-row" data-play="' + ft.id + '"><span class="wg-ico" style="background:var(--tile)">' + icon('sparkles') + '</span><span class="wg-meta"><span class="wg-title" style="display:block">No recent game</span><span class="wg-sub" style="display:block">Try today’s pick: ' + esc(ft.title) + '</span></span>' + icon('chevronRight', 'wg-chev') + '</button>') + '</section>' +
+      (function () { const g = last ? last.g : ft;
+        return '<section data-wg="jump" class="wg wg-cont os-glass"><div class="wg-art" data-play="' + g.id + '" data-cover="' + g.id + '" role="button" tabindex="-1" aria-label="Play ' + esc(g.title) + '"></div><div class="wg-in"><div class="wg-sub">' + (last ? 'Last played ' + ago(last.at) : 'Today’s pick') + '</div>' +
+          '<div class="wg-title">' + esc(g.title) + '</div><div class="btn-row"><button class="btn-light" data-play="' + g.id + '">' + (last ? 'Resume' : 'Play') + '</button><button class="btn-soft" data-info="' + g.id + '">Details</button></div></div></section>'; })() +
       '<section data-wg="quick" class="wg span-6 os-glass"><div class="wg-head"><span class="os-label">Quick play</span><button class="btn btn-sm btn-ghost" data-act="shuffle" aria-label="Shuffle">' + icon('shuffle') + 'Shuffle</button></div>' +
       '<button class="wg-row" data-play="' + q.id + '"><span class="wg-ico" data-cover="' + q.id + '"></span><span class="wg-meta"><span class="wg-title" style="display:block">' + esc(q.title) + '</span><span class="wg-sub" style="display:block">' + esc(q.tagline) + '</span></span>' + icon('play', 'wg-chev') + '</button></section>' +
-      '<section data-wg="daily" class="wg os-glass"><div class="wg-head"><span class="os-label">Daily challenge</span>' + (dl.done ? '<span class="pill ok">' + icon('check') + 'Done</span>' : '<span class="pill hot">+' + dl.xp + ' XP</span>') + '</div>' +
-      '<div class="wg-title" style="font-size:19px;white-space:normal">' + esc(dl.def.text) + '</div>' +
-      (dl.def.kind === 'featured' ? '<div class="wg-sub" style="margin-top:2px">Today: <a href="#" data-play="' + ft.id + '">' + esc(ft.title) + '</a></div>' : '') +
-      '<div class="bar gold" style="margin-top:14px"><i style="width:' + pct + '%"></i></div><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--faint)"><span>' + progressText(dl) + '</span><span>Resets in ' + hLeft + 'h ' + mLeft + 'm</span></div>' +
-      '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="os-label">Weekly</span>' + (wc.done ? '<span class="pill ok">' + icon('check') + 'Done</span>' : '<span class="pill hot">+500 XP</span>') + '</div>' +
-      '<div style="margin-top:6px;font-weight:600">' + esc(wc.def.text) + '</div><div class="bar" style="margin-top:10px;height:6px"><i style="width:' + Math.round(wc.progress / wc.goal * 100) + '%"></i></div><div style="font-size:13px;color:var(--faint);margin-top:6px">' + progressText(wc) + '</div></div></section>' +
+      '<section data-wg="daily" class="wg os-glass"><div class="wg-sub">Today’s challenge</div><div class="wg-title" style="margin-top:2px;font-weight:500;white-space:normal">' + esc(dl.def.text) + '</div>' +
+      (dl.def.kind === 'featured' ? '<div class="wg-sub" style="margin-top:2px">Today’s game: <a href="#" data-play="' + ft.id + '">' + esc(ft.title) + '</a></div>' : '') +
+      '<div class="bar" style="margin:10px 0 6px"><i style="width:' + pct + '%"></i></div><div class="wg-sub">' + progressText(dl) + (dl.done ? '. Done, +' + dl.xp + ' XP.' : '. Resets in ' + hLeft + 'h ' + mLeft + 'm.') + '</div>' +
+      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div class="wg-sub">This week</div><div style="margin-top:2px;font-weight:500">' + esc(wc.def.text) + '</div><div class="bar" style="margin:8px 0 6px;height:4px"><i style="width:' + Math.round(wc.progress / wc.goal * 100) + '%"></i></div><div class="wg-sub">' + progressText(wc) + (wc.done ? '. Done.' : '. +500 XP when you finish.') + '</div></div></section>' +
       '<section data-wg="level" class="wg os-glass"><div class="wg-head"><span class="os-label">Your level</span><span class="pill ' + (m.streak.count > 1 ? 'hot' : '') + '">' + icon('flame') + m.streak.count + '-day streak</span></div>' +
-      '<button class="wg-row" data-app="profile" style="padding:0"><span class="wg-ico" style="width:58px;height:58px;background:' + (u ? hueBg(u.hue) : 'var(--tile)') + ';font:700 24px var(--font-os)">' + (u ? esc(u.username[0].toUpperCase()) : icon('user')) + '</span><span class="wg-meta"><span class="wg-title" style="display:block">Level ' + lv.level + ' · ' + lv.title + '</span><span class="wg-sub" style="display:block">' + lv.cur.toLocaleString() + ' / ' + lv.need.toLocaleString() + ' XP to next level</span></span></button>' +
+      '<button class="wg-row" data-app="profile" style="padding:0"><span class="wg-ico" style="width:58px;height:58px;background:' + (u ? hueBg(u.hue) : 'var(--tile)') + ';font:700 24px var(--font-os)">' + (u ? esc(u.username[0].toUpperCase()) : icon('user')) + '</span><span class="wg-meta"><span class="wg-title" style="display:block">Level ' + lv.level + ', ' + lv.title + '</span><span class="wg-sub" style="display:block">' + lv.cur.toLocaleString() + ' / ' + lv.need.toLocaleString() + ' XP to next level</span></span></button>' +
       '<div class="bar" style="margin-top:14px"><i style="width:' + (lv.pct * 100) + '%"></i></div>' +
       '<div class="wg-actions"><button class="pill" data-app="achievements" style="cursor:pointer">' + icon('trophy') + achDone + '/' + achTotal + ' achievements</button>' + (u ? '' : '<button class="pill" data-act="signup" style="cursor:pointer">' + icon('cloud') + 'Sign up to sync</button>') + '</div></section>' +
-      '<section data-wg="music" class="wg os-glass"><div class="wg-head"><span class="os-label">Now playing</span><button class="btn btn-sm btn-ghost" data-app="music">' + icon('music') + 'Open</button></div>' +
-      '<div class="wg-row" style="cursor:default;padding:0">' + musicArt(track, 58) + '<span class="wg-meta"><span class="wg-title" style="display:block">' + (playing ? esc(track.name) : 'Not playing') + '</span><span class="wg-sub" style="display:block">' + (playing ? esc(track.sub) : esc(track.kind === 'file' ? track.station.name + ' · ' + track.count + ' songs' : track.vibe + ' · Nova Radio')) + '</span></span>' +
-      '<button class="icon-btn" data-act="music-next" aria-label="Next">' + icon('skip') + '</button><button class="big-play" data-act="music" style="width:46px;height:46px;flex:none" aria-label="' + (playing ? 'Pause' : 'Play') + '">' + icon(playing ? 'pause' : 'play') + '</button></div>' +
-      '<div class="viz" id="home-viz" style="margin-top:14px">' + '<i></i>'.repeat(28) + '</div></section>' +
+      '<section data-wg="music" class="wg os-glass"><div class="wg-row" style="cursor:default;padding:0">' + musicArt(track, 48) + '<span class="wg-meta"><span class="wg-title" style="display:block">' + (playing ? esc(track.name) : 'Music is off') + '</span><span class="wg-sub" style="display:block">' + (playing ? esc(track.sub) : esc(track.kind === 'file' ? track.station.name : 'Nova Radio')) + '</span></span>' +
+      '<button class="icon-btn" data-act="music-next" aria-label="Next song">' + icon('skip') + '</button><button class="big-play" data-act="music" style="flex:none" aria-label="' + (playing ? 'Pause' : 'Play') + '">' + icon(playing ? 'pause' : 'play') + '</button></div>' +
+      '<div class="viz" id="home-viz" style="margin-top:12px;height:18px">' + '<i></i>'.repeat(32) + '</div></section>' +
       '<section data-wg="games" class="wg span-8 os-glass"><div class="wg-head"><span class="os-label">' + (favs.length ? 'Your favorites' : trendList.length >= 4 ? 'Trending now' : 'Popular right now') + '</span><button class="btn btn-sm btn-ghost" data-app="games">See all ' + LIVE.length + ' ' + icon('chevronRight') + '</button></div>' +
       '<div class="mini-grid">' + (favs.length ? favs : trendList.length >= 4 ? trendList : LIVE.filter((g) => g.popular)).slice(0, 8).map((g) => '<button class="mini" data-play="' + g.id + '" data-cover="' + g.id + '"><span>' + esc(g.title) + '</span></button>').join('') + '</div></section>' +
       '<section data-wg="system" class="wg os-glass"><div class="os-label" style="margin-bottom:14px">System status</div>' +
-      '<button class="wg-row" data-app="updates"><span class="wg-meta"><span class="wg-title" style="display:block">Update Log</span><span class="wg-sub" style="display:block">v' + A.config.version + ' · View latest patches</span></span>' + icon('chevronRight', 'wg-chev') + '</button>' +
+      '<button class="wg-row" data-app="updates"><span class="wg-meta"><span class="wg-title" style="display:block">Update Log</span><span class="wg-sub" style="display:block">v' + A.config.version + '. See what changed</span></span>' + icon('chevronRight', 'wg-chev') + '</button>' +
       '<button class="wg-row" data-app="request"><span class="wg-meta"><span class="wg-title" style="display:block;font-size:19px">Request a game</span><span class="wg-sub" style="display:block">Tell us what to add next</span></span>' + icon('chevronRight', 'wg-chev') + '</button>' +
       '<button class="wg-row" data-act="search"><span class="wg-meta"><span class="wg-title" style="display:block;font-size:19px">Search anything</span><span class="wg-sub" style="display:block">Press <span class="kbd">/</span> anywhere</span></span>' + icon('search', 'wg-chev') + '</button></section>';
+    const di = $('#desk-icons');
+    if (di) {
+      const seen = {}, picks = favs.concat(m.recent.map((r) => byId(r.id)).filter(Boolean), LIVE.filter((g) => g.popular)).filter((g) => !seen[g.id] && (seen[g.id] = 1)).slice(0, 4);
+      di.innerHTML = ['games', 'browser', 'music', 'achievements'].map((id) => '<button class="dicon" data-app="' + id + '">' + appIco(id) + '<span>' + esc(APPS[id].title) + '</span></button>').join('') +
+        picks.map((g) => '<button class="dicon" data-play="' + g.id + '">' + gameIco(g) + '<span>' + esc(g.title) + '</span></button>').join('');
+    }
     applyLayout(root);
     fillCovers(root);
     startViz();
   }
-  const WG_NAMES = { jump: 'Jump back in', quick: 'Quick play', daily: 'Daily challenge', level: 'Your level', music: 'Now playing', games: 'Games', system: 'System status' };
+  const WG_NAMES = { jump: 'Continue playing', quick: 'Quick play', daily: 'Daily challenge', level: 'Your level', music: 'Now playing', games: 'Games', system: 'System status' };
   let editing = false;
-  function layout() { const l = A.store.get('os.widgets', null); return l && Array.isArray(l.order) ? l : { order: ['music', 'jump', 'daily', 'level', 'quick', 'games', 'system'], hidden: ['system'] }; }
+  function layout() { const l = A.store.get('os.widgets', null); return l && Array.isArray(l.order) ? l : { order: ['jump', 'music', 'daily', 'level', 'quick', 'games', 'system'], hidden: ['level', 'quick', 'games', 'system'] }; }
   function applyLayout(root) {
     const L = layout(), secs = {}; $$('[data-wg]', root).forEach((el) => (secs[el.dataset.wg] = el));
     const order = L.order.filter((k) => secs[k]).concat(Object.keys(secs).filter((k) => !L.order.includes(k)));
     order.forEach((k) => { const el = secs[k]; root.appendChild(el); const hid = L.hidden.includes(k); el.hidden = hid && !editing; el.classList.toggle('wg-off', hid);
       if (editing) el.insertAdjacentHTML('beforeend', '<div class="wg-edit"><span class="pill">' + esc(WG_NAMES[k]) + '</span><span style="display:flex;gap:6px"><button class="icon-btn" data-we="up" data-k="' + k + '" aria-label="Move earlier">' + icon('arrowLeft') + '</button><button class="icon-btn" data-we="down" data-k="' + k + '" aria-label="Move later">' + icon('chevronRight') + '</button><button class="icon-btn" data-we="hide" data-k="' + k + '" aria-label="' + (hid ? 'Show' : 'Hide') + ' widget">' + icon(hid ? 'plus' : 'minus') + '</button></span></div>'); });
-    const btn = $('#wg-edit-btn'); if (btn) btn.innerHTML = editing ? icon('check') + 'Done' : icon('settings') + 'Customize';
+    let done = $('.wg-done');
+    if (editing && !done) { done = A.ui.el('<button class="btn btn-primary wg-done">' + icon('check') + 'Done editing widgets</button>'); document.body.appendChild(done); done.addEventListener('click', () => { editing = false; A.audio.sfx('toggle'); paintHome(); }); }
+    else if (!editing && done) done.remove();
   }
   function editWidget(k, act) {
     const L = layout(); let o = L.order.slice(); Object.keys(WG_NAMES).forEach((x) => { if (!o.includes(x)) o.push(x); });
@@ -540,13 +560,15 @@
   }
   function progressText(dl) {
     const k = dl.def.kind;
-    if ((k === 'seconds' || k === 'featured') && dl.goal >= 3600) return (Math.floor(dl.progress / 360) / 10) + ' / ' + (dl.goal / 3600) + ' h';
-    if (k === 'seconds' || k === 'featured') return Math.floor(dl.progress / 60) + ' / ' + Math.round(dl.goal / 60) + ' min';
-    if (k === 'xp') return dl.progress.toLocaleString() + ' / ' + dl.goal.toLocaleString() + ' XP';
-    if (k === 'score') return dl.progress + ' / ' + dl.goal + ' points';
-    return dl.progress + ' / ' + dl.goal;
+    if ((k === 'seconds' || k === 'featured') && dl.goal >= 3600) return (Math.floor(dl.progress / 360) / 10) + ' of ' + (dl.goal / 3600) + ' hours';
+    if (k === 'seconds' || k === 'featured') return Math.floor(dl.progress / 60) + ' of ' + Math.round(dl.goal / 60) + ' minutes';
+    if (k === 'xp') return dl.progress.toLocaleString() + ' of ' + dl.goal.toLocaleString() + ' XP';
+    if (k === 'score') return dl.progress + ' of ' + dl.goal + ' points';
+    return dl.progress + ' of ' + dl.goal;
   }
   function pickQuick(m) { const fresh = LIVE.filter((g) => !m.tried[g.id] && g.id !== quickId); const pool = fresh.length ? fresh : LIVE; return pool[Math.floor(Math.random() * pool.length)].id; }
+  const deskIcons = $('#desk-icons');
+  if (deskIcons) deskIcons.addEventListener('click', (e) => { const p = e.target.closest('[data-play]'), a = e.target.closest('[data-app]'); if (p) openGame(p.dataset.play); else if (a) a.dataset.app === 'browser' ? openBrowser() : openApp(a.dataset.app); });
   /* desktop search: games first, otherwise the web */
   const heroQ = $('#hero-q');
   if (heroQ) {
@@ -561,6 +583,7 @@
   $('#widgets').addEventListener('click', (e) => {
     const we = e.target.closest('[data-we]'); if (we) { e.stopPropagation(); editWidget(we.dataset.k, we.dataset.we); return; }
     if (editing) return;
+    const inf = e.target.closest('[data-info]'); if (inf) { const g = byId(inf.dataset.info); if (g) gameInfo(g); return; }
     const p = e.target.closest('[data-play]'), a = e.target.closest('[data-app]'), act = e.target.closest('[data-act]');
     if (p) { e.preventDefault(); openGame(p.dataset.play); return; }
     if (a) { openApp(a.dataset.app); return; }
@@ -614,7 +637,7 @@
     return '<div class="gcard" role="button" tabindex="0" style="--h:' + g.hue + '" data-play="' + g.id + '" aria-label="Play ' + esc(g.title) + '"><div class="cov" data-cover="' + g.id + '">' +
       '<div class="gbadges">' + (g.popular ? '<span class="gbadge hot">Popular</span>' : '<span></span>') + (isNew ? '<span class="gbadge new">New</span>' : '') + '</div>' +
       '<button class="fav-btn' + (fav ? ' on' : '') + '" data-fav="' + g.id + '" aria-label="' + (fav ? 'Unfavorite' : 'Favorite') + ' ' + esc(g.title) + '">' + icon('heart') + '</button></div>' +
-      '<div class="body"><h3>' + esc(g.title) + '</h3><p>' + esc(g.tagline) + '</p><div class="gmeta"><span>' + esc(g.tags.slice(0, 2).join(' · ')) + '</span><span>' + (tr[g.id] && tr[g.id].likes > 0 ? tr[g.id].likes + ' like' + (tr[g.id].likes === 1 ? '' : 's') : tr[g.id] && tr[g.id].players > 1 ? tr[g.id].players + ' players' : r.plays ? (r.time >= 60 ? A.ui.fmtTime(r.time) + ' played' : 'Played') : 'Not played') + '</span></div></div></div>';
+      '<div class="body"><h3>' + esc(g.title) + '</h3><p>' + esc(g.tagline) + '</p><div class="gmeta"><span>' + esc(g.tags.slice(0, 2).join(', ')) + '</span><span>' + (tr[g.id] && tr[g.id].likes > 0 ? tr[g.id].likes + ' like' + (tr[g.id].likes === 1 ? '' : 's') : tr[g.id] && tr[g.id].players > 1 ? tr[g.id].players + ' players' : r.plays ? (r.time >= 60 ? A.ui.fmtTime(r.time) + ' played' : 'Played') : 'Not played') + '</span></div></div></div>';
   }
   function renderGames(body) {
     let q = '', filter = 'all', sort = 'popular';
@@ -694,11 +717,11 @@
         '<button class="mu-tab" data-view="gen" aria-pressed="' + (view === 'gen') + '"><i style="background:' + GEN_BG.neon + '"></i>Generated<span>' + Object.keys(mu.tracks).length + '</span></button>';
       const songs = vst
         ? vst.tracks.map((t, i) => { const on = n.kind === 'file' && n.station === vst && n.index === i; return '<button class="mu-song' + (on ? ' is-on' : '') + '" data-song="' + i + '"><span class="mu-num">' + (on && playing ? '<span class="mu-eq"><i></i><i></i><i></i></span>' : i + 1) + '</span><span class="mu-st"><b>' + esc(t.title) + '</b>' + (t.artist ? '<small>' + esc(t.artist) + '</small>' : '') + '</span></button>'; }).join('')
-        : Object.entries(mu.tracks).map(([k, t]) => { const on = n.kind === 'gen' && n.key === k; return '<button class="track" data-track="' + k + '" aria-pressed="' + on + '"><span class="app-ico" style="background:' + (GEN_BG[k] || '#333') + '">' + icon('music') + '</span><span style="flex:1"><b>' + esc(t.name) + '</b><div style="font-size:13px;color:var(--dim)">' + esc(t.vibe) + ' · ' + t.bpm + ' BPM</div></span>' + (on && playing ? '<span class="pill ok">Playing</span>' : '') + '</button>'; }).join('');
+        : Object.entries(mu.tracks).map(([k, t]) => { const on = n.kind === 'gen' && n.key === k; return '<button class="track" data-track="' + k + '" aria-pressed="' + on + '"><span class="app-ico" style="background:' + (GEN_BG[k] || '#333') + '">' + icon('music') + '</span><span style="flex:1"><b>' + esc(t.name) + '</b><div style="font-size:13px;color:var(--dim)">' + esc(t.vibe) + ', ' + t.bpm + ' BPM</div></span>' + (on && playing ? '<span class="pill ok">Playing</span>' : '') + '</button>'; }).join('');
       const pos = mu.position() || { time: 0, duration: 0 };
       body.innerHTML = '<div class="app mu-app">' +
         '<div class="mu-hero">' + musicArt(n, 132, playing) +
-          '<div class="mu-now"><span class="os-label">' + (playing ? 'Now playing' : 'Paused') + (n.kind === 'file' ? ' · ' + (n.index + 1) + ' of ' + n.count : '') + '</span><h2>' + esc(n.name) + '</h2><p class="app-sub">' + esc(n.kind === 'file' ? n.sub : n.vibe + ' · generated live, never repeats the same way') + '</p></div></div>' +
+          '<div class="mu-now"><span class="os-label">' + (playing ? 'Now playing' : 'Paused') + (n.kind === 'file' ? ', ' + (n.index + 1) + ' of ' + n.count : '') + '</span><h2>' + esc(n.name) + '</h2><p class="app-sub">' + esc(n.kind === 'file' ? n.sub : n.vibe + ', generated live, never repeats the same way') + '</p></div></div>' +
         (n.kind === 'file' ? '<div class="mu-prog"><span class="mu-t0">' + fmtT(pos.time) + '</span><div class="mu-bar" role="slider" aria-label="Seek" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + (pos.duration ? Math.round(pos.time / pos.duration * 100) : 0) + '"><i style="width:' + (pos.duration ? pos.time / pos.duration * 100 : 0) + '%"></i></div><span class="mu-t1">' + fmtT(pos.duration) + '</span></div>'
           : '<div class="viz music-viz" style="width:100%;height:46px">' + '<i></i>'.repeat(32) + '</div>') +
         '<div class="mu-ctrl">' +
@@ -751,7 +774,7 @@
       body.innerHTML = '<div class="app"><div><h2>Achievements</h2><p class="app-sub">Unlock them all to become a Nova legend.</p></div>' +
         '<div class="stat-grid"><div class="stat"><span>Unlocked</span><b>' + done + ' / ' + list.length + '</b></div><div class="stat"><span>Level</span><b>' + lv.level + '</b></div><div class="stat"><span>Total XP</span><b>' + m.xp.toLocaleString() + '</b></div><div class="stat"><span>Dailies done</span><b>' + m.dailiesDone + '</b></div></div>' +
         '<div class="ach-grid">' + list.map((a) => { const p = A.meta.progress(a, m); const val = a.fmt === 'time' ? A.ui.fmtTime(p.value) + ' / ' + A.ui.fmtTime(p.goal) : p.value + ' / ' + p.goal;
-          return '<div class="ach' + (p.done ? ' done' : '') + '"><span class="ai">' + icon(p.done ? a.icon : 'lock') + '</span><span style="flex:1;min-width:0"><b>' + esc(a.title) + '</b><small>' + esc(a.desc) + '</small>' + (p.done ? '<span class="xp">Unlocked ' + new Date(m.ach[a.id]).toLocaleDateString() + ' · +' + a.xp + ' XP</span>' : '<div class="bar gold"><i style="width:' + (p.value / p.goal * 100) + '%"></i></div><span class="xp">' + (p.goal > 1 ? val + ' · ' : '') + '+' + a.xp + ' XP</span>') + '</span></div>'; }).join('') + '</div></div>';
+          return '<div class="ach' + (p.done ? ' done' : '') + '"><span class="ai">' + icon(p.done ? a.icon : 'lock') + '</span><span style="flex:1;min-width:0"><b>' + esc(a.title) + '</b><small>' + esc(a.desc) + '</small>' + (p.done ? '<span class="xp">Unlocked ' + new Date(m.ach[a.id]).toLocaleDateString() + ', +' + a.xp + ' XP</span>' : '<div class="bar gold"><i style="width:' + (p.value / p.goal * 100) + '%"></i></div><span class="xp">' + (p.goal > 1 ? val + ', ' : '') + '+' + a.xp + ' XP</span>') + '</span></div>'; }).join('') + '</div></div>';
     };
     paint(); return onEv('meta', paint);
   }
@@ -770,7 +793,7 @@
       if (xpBoard && res.scope !== 'global') { const m = A.meta.get(), u = A.auth.current(), v = board === '__xpw' ? ((m.weekly && m.weekly.week === A.meta.week()) ? m.weekly.xp : 0) : m.xp; rows = v ? [{ name: u ? u.username : 'You (guest)', hue: u ? u.hue : 220, best: v, plays: Object.keys(m.tried).length, me: true }] : []; }
       const unit = xpBoard ? ' XP' : '';
       $('.lb-body', body).innerHTML = (res.scope !== 'global' ? '<p class="field-hint" style="margin-bottom:10px">Showing this device only — ' + (A.auth.current() ? 'global board is offline right now.' : '<a href="#" class="lb-join">create an account</a> to join the global board.') + '</p>' : '') +
-        (rows.length ? '<ol class="lb-rows">' + rows.map((r, i) => '<li class="' + (r.me ? 'me' : '') + '"><span class="rk">' + (i + 1) + '</span><span class="avatar" style="background:' + hueBg(r.hue) + '">' + esc(r.name[0].toUpperCase()) + '</span><span style="min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name) + (r.me ? ' <span class="badge" style="margin-left:4px">You</span>' : '') + '</b><small style="color:var(--faint)">' + (board === '__xp' ? 'Level ' + A.meta.levelInfo(r.best).level + ' · ' + r.plays + ' games tried' : board === '__xpw' ? r.plays + ' games tried' : r.plays + ' plays') + '</small></span><span class="sc">' + r.best.toLocaleString() + unit + '</span></li>').join('') + '</ol>'
+        (rows.length ? '<ol class="lb-rows">' + rows.map((r, i) => '<li class="' + (r.me ? 'me' : '') + '"><span class="rk">' + (i + 1) + '</span><span class="avatar" style="background:' + hueBg(r.hue) + '">' + esc(r.name[0].toUpperCase()) + '</span><span style="min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name) + (r.me ? ' <span class="badge" style="margin-left:4px">You</span>' : '') + '</b><small style="color:var(--faint)">' + (board === '__xp' ? 'Level ' + A.meta.levelInfo(r.best).level + ', ' + r.plays + ' games tried' : board === '__xpw' ? r.plays + ' games tried' : r.plays + ' plays') + '</small></span><span class="sc">' + r.best.toLocaleString() + unit + '</span></li>').join('') + '</ol>'
           : '<div class="empty">No one here yet. Be the first!</div>');
       const j = $('.lb-join', body); if (j) j.addEventListener('click', (e) => { e.preventDefault(); A.ui.openAuth('signup'); });
     };
@@ -787,7 +810,7 @@
       body.innerHTML = '<div class="app">' +
         '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><span class="avatar" style="width:76px;height:76px;font-size:32px;border-radius:22px;background:' + (u ? hueBg(u.hue) : 'var(--tile)') + '">' + (u ? esc(u.username[0].toUpperCase()) : icon('user').replace('<svg', '<svg width="34" height="34"')) + '</span>' +
         '<div style="flex:1;min-width:200px"><h2>' + (u ? esc(u.username) : 'Guest player') + '</h2><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' +
-        (u && A.auth.isOwner() ? '<span class="badge badge-pro">' + icon('crown') + 'Owner</span>' : '') + '<span class="badge">Level ' + lv.level + ' · ' + lv.title + '</span>' +
+        (u && A.auth.isOwner() ? '<span class="badge badge-pro">' + icon('crown') + 'Owner</span>' : '') + '<span class="badge">Level ' + lv.level + ', ' + lv.title + '</span>' +
         '<span class="badge">' + icon(u && u.cloud ? 'cloud' : 'phone') + (u && u.cloud ? 'Synced to cloud' : 'Saved on this device') + '</span></div></div>' +
         (u ? '<button class="btn btn-sm pf-out">' + icon('logout') + 'Log out</button>' : '<div style="display:flex;gap:8px"><button class="btn btn-sm pf-in">Log in</button><button class="btn btn-primary btn-sm pf-up">' + icon('user') + 'Sign up</button></div>') + '</div>' +
         (u ? '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="os-label">Avatar color</span><div class="swatches">' + [0, 25, 45, 90, 150, 190, 220, 265, 290, 330].map((h) => '<button class="swatch pf-hue" data-hue="' + h + '" aria-label="Color ' + h + '" aria-pressed="' + (Math.abs(u.hue - h) < 3) + '" style="width:30px;height:30px;background:' + hueBg(h) + '"></button>').join('') + '</div></div>' : '') +
@@ -863,7 +886,7 @@
   function renderAbout(body) {
     const ports = LIVE.filter((g) => !g.original);
     body.innerHTML = '<div class="app"><div><h2>Nova OS ' + esc(A.config.version) + '</h2><p class="app-sub">A free game desktop that runs in your browser. ' + LIVE.length + ' games, no downloads, progress that follows you.</p></div>' +
-      '<div class="stat-grid"><div class="stat"><span>Games</span><b>' + LIVE.length + '</b></div><div class="stat"><span>Shortcuts</span><b style="font-size:16px"><span class="kbd">/</span> search · <span class="kbd">Ctrl K</span></b></div></div>' +
+      '<div class="stat-grid"><div class="stat"><span>Games</span><b>' + LIVE.length + '</b></div><div class="stat"><span>Shortcuts</span><b style="font-size:16px"><span class="kbd">/</span> search, <span class="kbd">Ctrl K</span></b></div></div>' +
       '<section style="display:grid;gap:8px"><div class="os-label">Game credits</div><p class="field-hint">These games are open source. Each is hosted under its creator’s license, with trackers and ads removed.</p>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="text-align:left;color:var(--faint)"><th style="padding:8px">Game</th><th style="padding:8px">Creator</th><th style="padding:8px">License</th></tr></thead><tbody>' +
       ports.map((g) => '<tr style="border-top:1px solid var(--line)"><td style="padding:8px"><a href="https://github.com/' + esc(g.repo) + '" target="_blank" rel="noopener">' + esc(g.title) + '</a></td><td style="padding:8px;color:var(--dim)">' + esc(g.author) + '</td><td style="padding:8px"><span class="badge">' + esc(g.license) + '</span></td></tr>').join('') +
@@ -916,9 +939,9 @@
       $('.ad-stats', body).innerHTML = [['Players', S.players], ['New this week', S.new_7d], ['Active this week', S.active_7d], ['Hours played', S.hours], ['Likes', S.likes], ['Requests', S.requests]].map(([k, v]) => '<div class="stat"><span>' + k + '</span><b>' + (v == null ? '—' : Number(v).toLocaleString()) + '</b></div>').join('');
       const groups = {}; (rq || []).forEach((r) => { const k = r.title.trim().toLowerCase(); (groups[k] = groups[k] || { title: r.title.trim(), n: 0, notes: [], ids: [], last: r.created_at }).n++; groups[k].ids.push(r.id); if (r.note) groups[k].notes.push(r.note); });
       const g = Object.values(groups).sort((a, b) => b.n - a.n);
-      $('.ad-req', body).innerHTML = g.length ? '<div style="display:grid;gap:8px">' + g.map((x) => '<div class="nf" style="align-items:center"><span class="pill hot" style="flex:none">' + x.n + '×</span><span style="flex:1;min-width:0"><b style="display:block">' + esc(x.title) + '</b>' + (x.notes.length ? '<small>' + esc(x.notes.slice(0, 2).join(' · ').slice(0, 160)) + '</small>' : '<small>' + ago(Date.parse(x.last)) + '</small>') + '</span><button class="icon-btn ad-del" data-ids="' + x.ids.join(',') + '" aria-label="Dismiss ' + esc(x.title) + '">' + icon('trash') + '</button></div>').join('') + '</div>' : '<div class="empty">No requests yet.</div>';
+      $('.ad-req', body).innerHTML = g.length ? '<div style="display:grid;gap:8px">' + g.map((x) => '<div class="nf" style="align-items:center"><span class="pill hot" style="flex:none">' + x.n + '×</span><span style="flex:1;min-width:0"><b style="display:block">' + esc(x.title) + '</b>' + (x.notes.length ? '<small>' + esc(x.notes.slice(0, 2).join(', ').slice(0, 160)) + '</small>' : '<small>' + ago(Date.parse(x.last)) + '</small>') + '</span><button class="icon-btn ad-del" data-ids="' + x.ids.join(',') + '" aria-label="Dismiss ' + esc(x.title) + '">' + icon('trash') + '</button></div>').join('') + '</div>' : '<div class="empty">No requests yet.</div>';
       const top = LIVE.filter((x) => tr[x.id]).sort((a, b) => (tr[b.id].secs || 0) - (tr[a.id].secs || 0)).slice(0, 10);
-      $('.ad-top', body).innerHTML = top.length ? '<div class="start-list">' + top.map((x) => '<div class="sl">' + gameIco(x) + '<span style="flex:1"><b>' + esc(x.title) + '</b><small>' + tr[x.id].players + ' players · ' + Math.round((tr[x.id].secs || 0) / 360) / 10 + ' h · ' + (tr[x.id].likes || 0) + ' likes</small></span></div>').join('') + '</div>' : '<div class="empty">No play data yet.</div>';
+      $('.ad-top', body).innerHTML = top.length ? '<div class="start-list">' + top.map((x) => '<div class="sl">' + gameIco(x) + '<span style="flex:1"><b>' + esc(x.title) + '</b><small>' + tr[x.id].players + ' players, ' + Math.round((tr[x.id].secs || 0) / 360) / 10 + ' h, ' + (tr[x.id].likes || 0) + ' likes</small></span></div>').join('') + '</div>' : '<div class="empty">No play data yet.</div>';
     };
     body.addEventListener('click', async (e) => {
       if (e.target.closest('.ad-ref')) { A.store.remove('trendCache'); paint(); }

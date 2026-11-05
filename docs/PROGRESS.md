@@ -41,6 +41,15 @@ _Last updated: 2026-11-03. Read this first when resuming._
 - **Built here from source:** Candy Box 2 (TypeScript 1.8 `lib/tsc.js` from microsoft/TypeScript tag v1.8.10, `tsc ... --out`, unminified),
   Q1K3 (`pack_map.c` + `pack_model.php` → `build/l`, `build/m`; served via the repo's dev `index.html`).
 
+## Desktop redesign (2026-11-04, replaces the glowing galaxy look)
+- Goal: look like a real OS, not AI-made. Rules: one font (Onest, self-hosted in assets/fonts), sentence-case labels (no tracked ALL-CAPS),
+  no glow / gradient blobs, solid violet-black panels, violet only for selection/progress, no '·' separators in UI copy.
+- Wallpaper: still photo-style nebula `assets/wallpapers/galaxy.jpg` (Galaxy preset draws it once).
+- Desktop: day name + time/date top-left, desktop icons (4 apps + 4 favorite/recent games), widgets on the right
+  (Continue playing with art, Music, Today's challenge; others hidden by default, right-click → Edit widgets).
+- Taskbar: centered Start, Search, pinned apps (Games, Browser, Music, Achievements, Settings), running games; tray right.
+- Each app icon: own shade of violet + filled glyph (`GLYPH` / `SHADE` in os.js).
+
 ## Galaxy redesign + Nova Browser (2026-11-04)
 - Look: one purple/black galaxy palette (no per-app rainbow colors). New default wallpaper "Galaxy" (`assets/core.js` PRESETS.galaxy).
   Fonts: Orbitron (display), Space Grotesk (UI), JetBrains Mono (labels). Theme overrides live in `assets/galaxy.css` (loaded after os.css).

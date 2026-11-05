@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#04020a">
   <title>Nova Browser</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
   <style>
+    @font-face { font-family: 'Onest'; src: url('../assets/fonts/Onest.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
     :root {
-      --bg: #04020a; --panel: rgba(10, 6, 22, .92); --line: rgba(167, 139, 250, .16); --line-strong: rgba(167, 139, 250, .34);
-      --txt: #f1ecff; --dim: rgba(225, 214, 255, .66); --faint: rgba(200, 186, 245, .44); --violet: #a78bfa; --violet-hi: #d8b4fe;
-      --tile: linear-gradient(150deg, #2b1857 0%, #160c2e 60%, #0d0720 100%);
-      --ui: 'Space Grotesk', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace; --display: 'Orbitron', var(--ui);
+      --bg: #0b0912; --panel: #14101e; --line: rgba(255, 255, 255, .07); --line-strong: rgba(255, 255, 255, .14);
+      --txt: #ece8f6; --dim: #a79fbd; --faint: #776f8c; --violet: #9d84ff; --violet-hi: #d6ccff;
+      --tile: #2b1f5c;
+      --ui: 'Onest', system-ui, sans-serif; --mono: var(--ui); --display: var(--ui);
       color-scheme: dark;
     }
     * { box-sizing: border-box; }
@@ -23,13 +22,13 @@
     .ico { width: 16px; height: 16px; }
 
     /* tabs */
-    .tabs { display: flex; align-items: flex-end; gap: 4px; height: 38px; padding: 6px 8px 0; background: #05030c; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; flex: none; }
+    .tabs { display: flex; align-items: flex-end; gap: 4px; height: 38px; padding: 6px 8px 0; background: #0b0912; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; flex: none; }
     .tabs::-webkit-scrollbar { display: none; }
     .tab { display: flex; align-items: center; gap: 8px; height: 32px; min-width: 120px; max-width: 220px; flex: 0 1 200px; padding: 0 6px 0 12px; border: 1px solid transparent; border-bottom: 0; border-radius: 10px 10px 0 0;
       background: transparent; color: var(--dim); cursor: pointer; font-size: 12.5px; transition: background .15s, color .15s; }
     .tab:hover { background: rgba(167, 139, 250, .07); color: var(--txt); }
-    .tab.on { background: var(--panel); border-color: var(--line); color: var(--txt); box-shadow: inset 0 2px 0 var(--violet); }
-    .tab .fav { width: 16px; height: 16px; border-radius: 4px; flex: none; display: grid; place-items: center; background: var(--tile); border: 1px solid var(--line-strong); font: 600 9px var(--mono); color: var(--violet-hi); }
+    .tab.on { background: var(--panel); border-color: var(--line); color: var(--txt); }
+    .tab .fav { width: 16px; height: 16px; border-radius: 4px; flex: none; display: grid; place-items: center; background: var(--tile); border: 1px solid var(--line-strong); font: 600 9px var(--ui); color: var(--violet-hi); }
     .tab .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
     .tab .x { width: 22px; height: 22px; border: 0; border-radius: 6px; background: transparent; display: grid; place-items: center; cursor: pointer; color: var(--faint); flex: none; }
     .tab .x:hover { background: rgba(167, 139, 250, .16); color: var(--txt); }
@@ -43,14 +42,14 @@
     .ib:hover { background: rgba(167, 139, 250, .12); color: var(--txt); }
     .ib:disabled { opacity: .35; pointer-events: none; }
     .addr { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 10px; background: rgba(167, 139, 250, .06); border: 1px solid var(--line); transition: border-color .2s, box-shadow .2s; }
-    .addr:focus-within { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(139, 92, 246, .18); }
+    .addr:focus-within { border-color: var(--violet); }
     .addr svg { width: 14px; height: 14px; color: var(--violet); flex: none; }
-    .addr input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: 400 13px var(--mono); color: var(--txt); }
+    .addr input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: 400 14px var(--ui); color: var(--txt); }
     .addr input::placeholder { color: var(--faint); font-family: var(--ui); }
-    .srv { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line-strong); background: rgba(139, 92, 246, .1); cursor: pointer; font: 500 12px var(--mono); letter-spacing: .04em; white-space: nowrap; flex: none; }
-    .srv:hover { background: rgba(139, 92, 246, .2); }
+    .srv { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, .05); cursor: pointer; font: 500 13px var(--ui); white-space: nowrap; flex: none; }
+    .srv:hover { background: rgba(255, 255, 255, .1); }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
-    .dot.ok { background: #a78bfa; box-shadow: 0 0 8px #a78bfa; }
+    .dot.ok { background: #9d84ff; }
     .dot.bad { background: #6b5a8e; }
 
     /* views */
@@ -61,51 +60,49 @@
 
     /* new tab page */
     .ntp { position: absolute; inset: 0; overflow: auto; display: grid; place-items: center; padding: 32px 16px;
-      background: radial-gradient(ellipse at 30% 20%, rgba(124, 58, 237, .22), transparent 55%), radial-gradient(ellipse at 75% 80%, rgba(76, 29, 149, .3), transparent 55%), var(--bg); }
-    .ntp::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .55;
-      background-image: radial-gradient(1px 1px at 12% 22%, #e9d5ff, transparent), radial-gradient(1px 1px at 72% 12%, #fff, transparent), radial-gradient(1px 1px at 42% 68%, #c4b5fd, transparent), radial-gradient(1.5px 1.5px at 86% 52%, #e9d5ff, transparent), radial-gradient(1px 1px at 22% 82%, #fff, transparent), radial-gradient(1px 1px at 58% 36%, #ddd6fe, transparent), radial-gradient(1px 1px at 92% 88%, #fff, transparent), radial-gradient(1px 1px at 6% 56%, #c4b5fd, transparent); }
-    .ntp-in { position: relative; width: min(660px, 100%); display: grid; gap: 22px; justify-items: center; text-align: center; }
-    .brand { font: 500 clamp(34px, 7vw, 60px)/1 var(--display); letter-spacing: .32em; margin-right: -.32em; text-shadow: 0 0 28px rgba(167, 139, 250, .6); }
-    .brand-sub { font: 500 11px var(--mono); letter-spacing: .4em; color: var(--faint); margin-top: -12px; }
-    .big-search { width: 100%; display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 8px 0 18px; border-radius: 14px; background: rgba(8, 5, 18, .7); border: 1px solid var(--line-strong); transition: border-color .2s, box-shadow .25s; }
-    .big-search:focus-within { border-color: var(--violet); box-shadow: 0 0 0 4px rgba(139, 92, 246, .18), 0 0 40px -10px rgba(139, 92, 246, .7); }
+      background: #000 url('../assets/wallpapers/galaxy.jpg') center / cover; }
+    .ntp-in { position: relative; width: min(640px, 100%); display: grid; gap: 18px; margin-top: -8vh; justify-items: center; text-align: center; }
+    .brand { font: 300 clamp(40px, 7vw, 64px)/1 var(--display); letter-spacing: -0.02em; text-shadow: 0 2px 24px rgba(0, 0, 0, .5); }
+    .brand-sub { display: none; }
+    .big-search { width: 100%; display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 8px 0 18px; border-radius: 27px; background: rgba(20, 16, 30, .92); border: 1px solid var(--line-strong); transition: border-color .15s; }
+    .big-search:focus-within { border-color: var(--violet); }
     .big-search svg { width: 18px; height: 18px; color: var(--violet); flex: none; }
     .big-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 16px; }
     .big-search input::placeholder { color: var(--faint); }
-    .go { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line-strong); background: rgba(139, 92, 246, .16); color: var(--violet-hi); display: grid; place-items: center; cursor: pointer; flex: none; }
-    .go:hover { background: rgba(139, 92, 246, .3); }
+    .go { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .08); color: var(--violet-hi); display: grid; place-items: center; cursor: pointer; flex: none; }
+    .go:hover { background: rgba(255, 255, 255, .14); }
     .links { width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; }
-    .lk { display: grid; justify-items: center; gap: 8px; padding: 14px 6px; border-radius: 12px; border: 1px solid var(--line); background: rgba(14, 9, 30, .55); cursor: pointer; font-size: 12.5px; color: var(--dim); transition: border-color .2s, background .2s, transform .2s; }
-    .lk:hover { border-color: rgba(167, 139, 250, .5); background: rgba(139, 92, 246, .12); color: var(--txt); transform: translateY(-2px); }
-    .lk b { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: var(--tile); border: 1px solid var(--line-strong); font: 600 16px var(--display); color: var(--violet-hi); box-shadow: 0 0 18px -8px rgba(139, 92, 246, .9); }
-    .note { width: 100%; text-align: left; padding: 14px 16px; border-radius: 12px; border: 1px dashed var(--line-strong); background: rgba(8, 5, 18, .6); color: var(--dim); font-size: 13px; display: block; line-height: 1.6; }
+    .lk { display: grid; justify-items: center; gap: 8px; padding: 12px 6px; border-radius: 8px; border: 1px solid transparent; background: none; cursor: pointer; font-size: 13px; color: #f4f1fb; text-shadow: 0 1px 3px #000; transition: background .15s; }
+    .lk:hover { background: rgba(255, 255, 255, .08); }
+    .lk b { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--panel); border: 1px solid var(--line); font: 600 19px var(--ui); color: var(--violet-hi); box-shadow: 0 6px 16px rgba(0, 0, 0, .5); }
+    .note { width: 100%; text-align: left; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: rgba(20, 16, 30, .92); color: var(--dim); font-size: 13px; display: block; line-height: 1.6; }
     .note b { display: block; margin-bottom: 4px; color: var(--txt); font-weight: 600; }
     .note > span { display: block; margin-top: 12px; }
-    .note code { font: 12px var(--mono); color: var(--violet-hi); }
-    .btn { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--line-strong); background: rgba(139, 92, 246, .18); color: var(--txt); cursor: pointer; font: 500 12px var(--mono); letter-spacing: .06em; }
-    .btn:hover { background: rgba(139, 92, 246, .32); }
-    .status { font: 400 11.5px var(--mono); color: var(--faint); letter-spacing: .06em; display: flex; align-items: center; gap: 8px; }
+    .note code { font: 13px ui-monospace, monospace; color: var(--violet-hi); }
+    .btn { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 8px; border: 0; background: rgba(255, 255, 255, .1); color: var(--txt); cursor: pointer; font: 500 13px var(--ui); }
+    .btn:hover { background: rgba(255, 255, 255, .16); }
+    .status { font: 400 13px var(--ui); color: var(--dim); text-shadow: 0 1px 3px #000; display: flex; align-items: center; gap: 8px; }
 
     /* server menu */
-    .menu { position: absolute; top: 90px; right: 8px; z-index: 20; width: min(360px, calc(100vw - 16px)); padding: 14px; border-radius: 14px; background: rgba(8, 5, 18, .97); border: 1px solid var(--line-strong);
-      box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .9), 0 0 60px -24px rgba(139, 92, 246, .8); display: none; gap: 12px; }
+    .menu { position: absolute; top: 90px; right: 8px; z-index: 20; width: min(360px, calc(100vw - 16px)); padding: 14px; border-radius: 10px; background: #18131f; border: 1px solid var(--line-strong);
+      box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .9); display: none; gap: 12px; }
     .menu.on { display: grid; }
-    .lbl { font: 500 10.5px var(--mono); letter-spacing: .22em; text-transform: uppercase; color: var(--faint); }
+    .lbl { font: 500 13px var(--ui); color: var(--dim); }
     .opt { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 9px; border: 1px solid transparent; background: transparent; cursor: pointer; text-align: left; }
     .opt:hover { background: rgba(167, 139, 250, .1); }
-    .opt.on { border-color: var(--line-strong); background: rgba(139, 92, 246, .14); }
+    .opt.on { border-color: rgba(157, 132, 255, .35); background: rgba(108, 76, 240, .14); }
     .opt span { flex: 1; min-width: 0; display: grid; }
-    .opt small { font: 11px var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .opt small { font: 12px var(--ui); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .opt .rm { width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; color: var(--faint); }
     .opt .rm:hover { background: rgba(167, 139, 250, .18); color: var(--txt); }
     .field { display: flex; gap: 6px; }
-    .field input, .menu select { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--line); background: rgba(167, 139, 250, .06); outline: 0; font: 12px var(--mono); }
+    .field input, .menu select { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255, 255, 255, .05); outline: 0; font: 13px var(--ui); }
     .field input:focus, .menu select:focus { border-color: var(--violet); }
     .menu select { width: 100%; font-family: var(--ui); font-size: 13px; }
     .menu option { background: #0b0716; }
     .err { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: var(--bg); }
     .err .note { max-width: 520px; }
-    .loading { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--violet-hi), transparent); background-size: 50% 100%; animation: ld 1s linear infinite; display: none; z-index: 5; }
+    .loading { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--violet), transparent); background-size: 50% 100%; animation: ld 1s linear infinite; display: none; z-index: 5; }
     .loading.on { display: block; }
     @keyframes ld { from { background-position: -50% 0; } to { background-position: 150% 0; } }
     @media (max-width: 600px) { .srv .nm { display: none; } .tab { min-width: 90px; } }
@@ -158,6 +155,7 @@
       .concat(ls.get('custom', []).map((u, i) => ({ name: 'My server' + (i ? ' ' + (i + 1) : ''), url: u, own: true })));
     const current = () => { const list = servers(), saved = ls.get('server', null); return list.find((s) => s.url === saved) || list[0] || null; };
     const engine = () => ls.get('engine', CFG.searchEngine || 'https://duckduckgo.com/?q=%s');
+    const engineName = () => ({ duckduckgo: 'DuckDuckGo', google: 'Google', bing: 'Bing', brave: 'Brave Search' })[(engine().match(/(duckduckgo|google|bing|brave)/) || [])[1]] || 'the web';
 
     /* ---------------- scramjet ---------------- */
     let sj = null, conn = null, bootP = null, transportFor = null;
@@ -229,10 +227,10 @@
       t.url = ''; t.title = 'New tab';
       const s = current();
       const links = (CFG.quickLinks || []).map((l) => '<button class="lk" data-go="' + esc(l.url) + '"><b>' + esc(l.name[0]) + '</b>' + esc(l.name) + '</button>').join('');
-      t.view.innerHTML = '<div class="ntp"><div class="ntp-in"><div class="brand">NOVA</div><div class="brand-sub">BROWSER</div>' +
-        '<form class="big-search ntp-form"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input class="ntp-q" placeholder="Search the web or type a URL" autocomplete="off" spellcheck="false" aria-label="Search the web or type a URL"><button class="go" aria-label="Go"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button></form>' +
+      t.view.innerHTML = '<div class="ntp"><div class="ntp-in">' +
+        '<form class="big-search ntp-form"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input class="ntp-q" placeholder="Search with ' + esc(engineName()) + ' or type a website" autocomplete="off" spellcheck="false" aria-label="Search the web or type a URL"><button class="go" aria-label="Go"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button></form>' +
         '<div class="links">' + links + '</div>' +
-        (libsOk ? (s ? '<div class="status"><i class="dot ' + (transportFor === s.url ? 'ok' : '') + '"></i>Connected through ' + esc(s.name) + '</div>'
+        (libsOk ? (s ? '<div class="status"><i class="dot ' + (transportFor === s.url ? 'ok' : '') + '"></i>Connected to ' + esc(s.name) + '</div>'
           : '<div class="note"><b>No server set up yet</b>The browser needs a Wisp server to reach websites. Add one in <code>proxy/config.js</code>, or paste your own address in the server menu (top right).<span><button class="btn open-menu" type="button">Add a server</button></span></div>')
           : '<div class="note"><b>Browser files aren’t built here</b>Scramjet is downloaded when the site deploys on Vercel (<code>npm run build:proxy</code>). Run that locally to test.</div>') +
         '</div></div>';
@@ -280,7 +278,7 @@
     function paintMenu() {
       const list = servers(), cur = current();
       $('srv-list').innerHTML = list.length ? list.map((s) => '<button class="opt' + (cur && cur.url === s.url ? ' on' : '') + '" data-srv="' + esc(s.url) + '"><i class="dot ' + (transportFor === s.url ? 'ok' : '') + '"></i><span><b>' + esc(s.name) + '</b><small>' + esc(s.url) + '</small></span>' + (s.own ? '<i class="rm" data-rm="' + esc(s.url) + '" aria-label="Remove">' + X + '</i>' : '') + '</button>').join('')
-        : '<p class="status" style="margin:0">No servers yet — add one below.</p>';
+        : '<p class="status" style="margin:0">No servers yet. Add one below.</p>';
       $('engine').value = engine();
     }
     function openMenu() { paintMenu(); $('menu').classList.add('on'); }

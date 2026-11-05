@@ -62,7 +62,7 @@ body.game-page { height: 100vh; height: 100dvh; display: flex; flex-direction: c
 @keyframes ov-in { from { opacity: 0; transform: translateY(14px) scale(.96); } }
 .ov-card h2 { font-size: clamp(30px, 5vw, 44px); background: linear-gradient(135deg, #fff, var(--primary-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .ov-card .ov-sub { color: var(--fg-dim); }
-.ov-score { font-family: var(--font-display); font-size: clamp(48px, 9vw, 72px); line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 30px var(--primary-glow); }
+.ov-score { font-family: var(--font-display); font-size: clamp(48px, 9vw, 72px); line-height: 1; font-variant-numeric: tabular-nums;  }
 .ov-record {
   justify-self: center; display: inline-flex; gap: 8px; align-items: center; padding: 6px 14px; border-radius: 999px;
   background: linear-gradient(135deg, #c084fc, #7c3aed); color: #12061f; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 13px;
@@ -86,12 +86,12 @@ body.game-page { height: 100vh; height: 100dvh; display: flex; flex-direction: c
   display: inline-block; min-width: 24px; padding: 1px 7px; border-radius: 6px; font: 600 12px var(--font-ui);
   background: rgba(255,255,255,.08); border: 1px solid var(--border); border-bottom-width: 2px; color: var(--fg);
 }
-.ov-count { font-family: var(--font-display); font-size: clamp(80px, 18vw, 140px); color: #fff; text-shadow: 0 0 40px var(--primary-glow), 0 0 80px var(--primary-glow); animation: count-pop .6s var(--ease-out); }
+.ov-count { font-family: var(--font-display); font-size: clamp(80px, 18vw, 140px); color: #fff;  animation: count-pop .6s var(--ease-out); }
 @keyframes count-pop { from { transform: scale(2.2); opacity: 0; } 30% { opacity: 1; } to { transform: scale(.9); opacity: .2; } }
 
 /* Side panel */
 .g-side { padding: 20px; overflow: auto; display: grid; gap: 22px; align-content: start; }
-.g-side h3 { font-family: var(--font-ui); font-weight: 700; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--fg-faint); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.g-side h3 { font-family: var(--font-ui); font-weight: 500; font-size: 13px; color: var(--fg-dim); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
 .g-side h3 svg { width: 15px; height: 15px; }
 .side-best { font-family: var(--font-display); font-size: 40px; line-height: 1; }
 .lb { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
