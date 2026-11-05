@@ -35,5 +35,5 @@ servers: [
 ```
 You can list several (Server 1, Server 2…); players pick one from the server menu.
 
-`ALLOWED_ORIGINS` keeps other sites from using your server. The relay uses Cloudflare's
+`ALLOWED_ORIGINS` keeps other sites from using your server (`https://*.example.com` allows every subdomain). The relay uses Cloudflare's
 family DNS (1.1.1.3), which blocks malware and adult sites.
