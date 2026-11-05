@@ -1471,7 +1471,7 @@
      SETTINGS
      ------------------------------------------------------------------------ */
   const DEFAULTS = {
-    bg: 'galaxy', music: true, track: 'auto', shuffle: false, musicVol: 0.45, sfx: true, sfxVol: 0.7,
+    bg: 'smoke', music: true, track: 'auto', shuffle: false, musicVol: 0.45, sfx: true, sfxVol: 0.7,
     accent: 'violet', crt: false, reducedMotion: false, shake: true, pauseMusicInGames: true, showFps: true, clock24: false, gamesMaximized: true, lockScreen: true
   };
   const settings = {
@@ -1850,25 +1850,35 @@
   window.addEventListener('pointermove', (e) => { pointer.x = e.clientX / innerWidth; pointer.y = e.clientY / innerHeight; pointer.active = true; }, { passive: true });
 
   const rand = (r) => r();
-  const PRESETS = {
-    galaxy: {
-      name: 'Galaxy', scale: 1,
-      // A still photo-style nebula (assets/wallpapers/galaxy.jpg), drawn once — no animation cost.
-      setup(c, w, h, S) {
-        S.done = false;
-        if (!PRESETS.galaxy.img) { const im = new Image(); im.src = (document.querySelector('link[href*="core.css"]') || { href: 'assets/core.css' }).href.replace(/core\.css.*$/, 'wallpapers/galaxy.jpg'); PRESETS.galaxy.img = im; }
-        const im = PRESETS.galaxy.img;
-        if (!im.complete) im.addEventListener('load', () => { S.done = false; PRESETS.galaxy.draw(c, w, h, 0, 0, S); }, { once: true });
-      },
+  /* Wallpapers that are files in assets/wallpapers/. Image presets are drawn once onto the canvas;
+     video presets play a looping muted <video> on the page and use their first frame (.jpg) for
+     previews and for Reduce motion. */
+  const WALL_DIR = (document.querySelector('link[href*="core.css"]') || { href: 'assets/core.css' }).href.replace(/core\.css.*$/, 'wallpapers/');
+  const imgCache = {};
+  function wallImage(file) { if (!imgCache[file]) { const im = new Image(); im.src = WALL_DIR + file; imgCache[file] = im; } return imgCache[file]; }
+  function imagePreset(name, file, o) {
+    o = o || {};
+    const def = {
+      name, scale: 1, still: true, file, fit: o.fit || 'cover',
+      setup(c, w, h, S) { S.done = false; const im = wallImage(file); if (!im.complete) im.addEventListener('load', () => { S.done = false; def.draw(c, w, h, 0, 0, S); }, { once: true }); },
       draw(c, w, h, t, dt, S) {
-        const im = PRESETS.galaxy.img;
         if (S.done) return;
-        c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
-        if (!im || !im.complete || !im.naturalWidth) return;
-        const k = Math.max(w / im.naturalWidth, h / im.naturalHeight), iw = im.naturalWidth * k, ih = im.naturalHeight * k;
+        const im = wallImage(file); c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
+        if (!im.complete || !im.naturalWidth) return;
+        const k = (def.fit === 'contain' ? Math.min : Math.max)(w / im.naturalWidth, h / im.naturalHeight), iw = im.naturalWidth * k, ih = im.naturalHeight * k;
         c.drawImage(im, (w - iw) / 2, (h - ih) / 2, iw, ih); S.done = true;
       }
-    },
+    };
+    return def;
+  }
+  function videoPreset(name, base, o) { const d = imagePreset(name, base + '.jpg', o); d.video = base; return d; }
+  const PRESETS = {
+    smoke: videoPreset('Smoke', 'smoke'),
+    swirl: videoPreset('Star Swirl', 'swirl', { fit: 'contain' }),
+    blossoms: videoPreset('Blossoms', 'blossoms'),
+    'pink-moon': videoPreset('Pink Moon', 'pink-moon'),
+    'night-garden': videoPreset('Night Garden', 'night-garden'),
+    galaxy: imagePreset('Galaxy', 'galaxy.jpg'),
     void: {
       name: 'Void', scale: 0.55,
       setup(c, w, h, S) {
@@ -2212,7 +2222,7 @@
     mount: mountBg,
     _page: null, _paused: false,
     /* stop animating while something covers the wallpaper (saves CPU on Chromebooks) */
-    pause() { if (this._paused) return; this._paused = true; if (this._page) { this._page.destroy(); this._page = null; } },
+    pause() { if (this._paused) return; this._paused = true; if (this._page) { this._page.destroy(); this._page = null; } const v = document.querySelector('.bg-video'); if (v) v.pause(); },
     resume() { if (!this._paused) return; this._paused = false; this.applyPage(); },
     applyPage() {
       if (EMBED) { document.documentElement.style.background = '#08080f'; return; }
@@ -2225,9 +2235,20 @@
         const v = document.createElement('div'); v.className = 'bg-vignette'; document.body.prepend(v);
       }
       if (!img) { img = document.createElement('div'); img.className = 'bg-image'; document.body.prepend(img); }
+      let vid = document.querySelector('.bg-video');
       if (this._page) { this._page.destroy(); this._page = null; }
       let id = settings.get('bg');
-      if (!PRESETS[id] && id !== 'custom') id = 'void';
+      if (!PRESETS[id] && id !== 'custom') id = 'smoke';
+      const def = PRESETS[id];
+      if (def && def.video && !settings.reducedMotion()) {
+        if (!vid) { vid = document.createElement('video'); vid.className = 'bg-video'; vid.muted = true; vid.loop = true; vid.autoplay = true; vid.playsInline = true; vid.setAttribute('playsinline', ''); vid.setAttribute('aria-hidden', 'true'); document.body.prepend(vid); }
+        const src = WALL_DIR + def.video + (vid.canPlayType('video/webm; codecs="vp9"') ? '.webm' : '.mp4');
+        if (vid.dataset.src !== src) { vid.dataset.src = src; vid.poster = WALL_DIR + def.file; vid.src = src; }
+        vid.style.objectFit = def.fit; vid.style.display = 'block'; canvas.style.display = 'none'; img.style.display = 'none';
+        const p = vid.play(); if (p && p.catch) p.catch(() => {});
+        return;
+      }
+      if (vid) { vid.pause(); vid.style.display = 'none'; }
       if (id === 'custom') {
         const data = store.get('customBg', null);
         if (data) { canvas.style.display = 'none'; img.style.display = 'block'; img.style.backgroundImage = 'url(' + data + ')'; return; }
