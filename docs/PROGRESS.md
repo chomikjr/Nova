@@ -19,7 +19,6 @@ _Last updated: 2026-11-03. Read this first when resuming._
 ## Decisions (keep consistent)
 - Only host games whose license allows it, keep their license file, strip trackers/ads/injected scripts.
 - Remakes made by other people are OK; Claude doesn't write remakes itself.
-- No proxy / filter-bypass features. No tab cloaking / "panic button".
 - Teen audience: no gambling-style mechanics (spin wheels, loot boxes), no public activity feeds of other users.
 
 ## Games requested but NOT added (copyright / license)
@@ -41,6 +40,16 @@ _Last updated: 2026-11-03. Read this first when resuming._
 - **Still needs a build step:** Cube Composer (PureScript).
 - **Built here from source:** Candy Box 2 (TypeScript 1.8 `lib/tsc.js` from microsoft/TypeScript tag v1.8.10, `tsc ... --out`, unminified),
   Q1K3 (`pack_map.c` + `pack_model.php` → `build/l`, `build/m`; served via the repo's dev `index.html`).
+
+## Galaxy redesign + Nova Browser (2026-11-04)
+- Look: one purple/black galaxy palette (no per-app rainbow colors). New default wallpaper "Galaxy" (`assets/core.js` PRESETS.galaxy).
+  Fonts: Orbitron (display), Space Grotesk (UI), JetBrains Mono (labels). Theme overrides live in `assets/galaxy.css` (loaded after os.css).
+- Desktop: big spaced day name + search bar ("Search games or the web") on the left, widget stack on the right, full-width taskbar
+  (Start, search, pinned apps, running games, FPS, full screen, notifications, clock). Start menu is a launcher panel.
+- Nova Browser app = Scramjet proxy. Page: `proxy/index.html` (tabs, address bar, server menu, new-tab page), SW: `proxy/sw.js` (scope /proxy/),
+  servers + quick links: `proxy/config.js`. Runtime files are copied to `proxy/lib/` at deploy by `scripts/build-proxy.js`
+  (Scramjet 1.1.0 + bare-mux 2.1.9 + libcurl-transport, see package.json). Needs a Wisp server hosted off Vercel: `wisp-server/` (see its README).
+- Desktop search and the `/` palette open the Browser for URLs / web searches.
 
 ## Done so far
 - **OS:** windows (drag/resize/max/min, snap to top, split screen left/right), dock (FPS, clock, running games, bell), Start menu

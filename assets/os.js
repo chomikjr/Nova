@@ -13,24 +13,26 @@
   const byId = (id) => LIVE.find((g) => g.id === id);
   const onEv = (name, fn) => { const h = (e) => fn(e.detail); window.addEventListener('arcade:' + name, h); return () => window.removeEventListener('arcade:' + name, h); };
   const ago = (t) => { const s = (Date.now() - t) / 1000; if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; return Math.floor(s / 86400) + 'd ago'; };
-  const hueBg = (h) => 'linear-gradient(135deg,hsl(' + h + ',80%,58%),hsl(' + (h + 55) + ',75%,42%))';
+  const hueBg = (h) => { const k = ((((h || 0) % 360) + 360) % 360) / 360; return 'linear-gradient(135deg,hsl(' + Math.round(255 + k * 35) + ',78%,' + Math.round(50 + k * 16) + '%),hsl(' + Math.round(265 + k * 20) + ',72%,' + Math.round(18 + k * 10) + '%))'; };
+  const TILE = 'var(--tile)';
 
   /* ---------------------------------------------------------------- APPS */
   const APPS = {
-    games:        { title: 'Games',        icon: 'gamepad', bg: 'linear-gradient(135deg,#7c3aed,#db2777)', w: 1060, h: 720, render: renderGames },
-    music:        { title: 'Music',        icon: 'music',   bg: 'linear-gradient(135deg,#f43f5e,#f59e0b)', w: 470, h: 700, render: renderMusic },
-    achievements: { title: 'Achievements', icon: 'trophy',  bg: 'linear-gradient(135deg,#d97706,#facc15)', w: 780, h: 640, render: renderAchievements },
-    leaderboard:  { title: 'Leaderboard',  icon: 'chart',   bg: 'linear-gradient(135deg,#0891b2,#3b82f6)', w: 540, h: 640, render: renderLeaderboard },
-    profile:      { title: 'Profile',      icon: 'user',    bg: 'linear-gradient(135deg,#059669,#06b6d4)', w: 580, h: 660, render: renderProfile },
-    settings:     { title: 'Settings',     icon: 'settings', bg: 'linear-gradient(135deg,#3f3f46,#a1a1aa)', w: 660, h: 700, render: renderSettings },
-    notes:        { title: 'Notes',        icon: 'sticky',  bg: 'linear-gradient(135deg,#ca8a04,#f97316)', w: 460, h: 520, render: renderNotes },
-    request:      { title: 'Request a Game', icon: 'send',  bg: 'linear-gradient(135deg,#db2777,#8b5cf6)', w: 500, h: 600, render: renderRequest },
-    updates:      { title: 'Update Log',   icon: 'zap',     bg: 'linear-gradient(135deg,#4f46e5,#22d3ee)', w: 520, h: 580, render: renderUpdates },
-    about:        { title: 'About & Credits', icon: 'info', bg: 'linear-gradient(135deg,#334155,#64748b)', w: 760, h: 640, render: renderAbout },
-    admin:        { title: 'Admin', icon: 'crown', bg: 'linear-gradient(135deg,#b45309,#f43f5e)', w: 720, h: 660, render: renderAdmin, owner: true }
+    games:        { title: 'Games',        icon: 'gamepad', bg: TILE, w: 1060, h: 720, render: renderGames },
+    browser:      { title: 'Browser',      icon: 'globe',   bg: TILE, w: 1120, h: 760, render: renderBrowser },
+    music:        { title: 'Music',        icon: 'music',   bg: TILE, w: 470, h: 700, render: renderMusic },
+    achievements: { title: 'Achievements', icon: 'trophy',  bg: TILE, w: 780, h: 640, render: renderAchievements },
+    leaderboard:  { title: 'Leaderboard',  icon: 'chart',   bg: TILE, w: 540, h: 640, render: renderLeaderboard },
+    profile:      { title: 'Profile',      icon: 'user',    bg: TILE, w: 580, h: 660, render: renderProfile },
+    settings:     { title: 'Settings',     icon: 'settings', bg: TILE, w: 660, h: 700, render: renderSettings },
+    notes:        { title: 'Notes',        icon: 'sticky',  bg: TILE, w: 460, h: 520, render: renderNotes },
+    request:      { title: 'Request a Game', icon: 'send',  bg: TILE, w: 500, h: 600, render: renderRequest },
+    updates:      { title: 'Update Log',   icon: 'zap',     bg: TILE, w: 520, h: 580, render: renderUpdates },
+    about:        { title: 'About & Credits', icon: 'info', bg: TILE, w: 760, h: 640, render: renderAbout },
+    admin:        { title: 'Admin', icon: 'crown', bg: TILE, w: 720, h: 660, render: renderAdmin, owner: true }
   };
   const visibleApps = () => Object.keys(APPS).filter((id) => !APPS[id].owner || A.auth.isOwner());
-  const PINNED = ['games', 'music', 'achievements', 'leaderboard', 'profile', 'settings'];
+  const PINNED = ['games', 'browser', 'music', 'achievements', 'leaderboard', 'profile', 'settings'];
   const appIco = (id, cls) => {
     const a = APPS[id];
     if (id === 'profile') { const u = A.auth.current(); if (u) return '<span class="app-ico av ' + (cls || '') + '" style="background:' + hueBg(u.hue) + '">' + esc(u.username[0].toUpperCase()) + '</span>'; }
@@ -237,21 +239,25 @@
     if (!wins.size) renderHome();
   }
 
+  if (!A.store.get('theme.galaxy', false)) { A.store.set('theme.galaxy', true); if (A.bg && A.bg.presets && A.bg.presets.galaxy) A.settings.set('bg', 'galaxy'); }
+
   /* --------------------------------------------------------------- DOCK */
   const dock = $('#dock'), tip = $('#dk-tip');
   function paintDock() {
     const running = [...wins.values()].filter((w) => w.opts.game);
     const btn = (key, inner, label, cls) => '<button class="dk ' + (cls || '') + '" data-dk="' + key + '" aria-label="' + esc(label) + '" data-tip="' + esc(label) + '">' + inner + '</button>';
     dock.innerHTML =
-      btn('start', '<span class="app-ico">' + icon('sparkles') + '</span>', 'Start  ( / to search )', 'dk-start') +
-      (A.settings.get('showFps') ? '<div class="fps hide-sm" aria-label="Frames per second"><span id="fps">60</span><small>FPS</small></div>' : '') +
-      '<button class="dk" data-dk="library" aria-label="All games" data-tip="All games"><span style="display:grid;place-items:center;width:42px;height:42px;color:#fff">' + icon('grid').replace('<svg', '<svg width="26" height="26"') + '</span></button>' +
-      '<span class="dock-sep"></span>' +
+      '<div class="tb-left">' + btn('start', '<span class="app-ico tb-logo">' + icon('nova') + '</span>', 'Start', 'dk-start') +
+      '<button class="tb-search" data-dk="search" aria-label="Search">' + icon('search') + '<span>Search games, apps or the web</span><kbd>/</kbd></button></div>' +
+      '<div class="tb-mid">' +
+      '<button class="dk" data-dk="library" aria-label="All games" data-tip="All games"><span class="app-ico tb-plain">' + icon('grid') + '</span></button>' +
       PINNED.map((id) => { const w = wins.get('app:' + id); return btn('app:' + id, appIco(id), APPS[id].title, (w ? 'is-open' : '') + (active === 'app:' + id ? ' is-active' : '')); }).join('') +
       (running.length ? '<span class="dock-sep"></span>' + running.map((w) => btn(w.key, gameIco(w.opts.game), w.opts.game.title, 'is-open' + (active === w.key ? ' is-active' : ''))).join('') : '') +
-      '<span class="dock-sep hide-sm"></span>' +
-      '<button class="dk dk-bell" data-dk="notifs" aria-label="Notifications" data-tip="Notifications"><span style="display:grid;place-items:center;width:42px;height:42px;color:#fff">' + icon('bell').replace('<svg', '<svg width="22" height="22"') + '</span>' + (unread() ? '<span class="dk-badge">' + Math.min(99, unread()) + '</span>' : '') + '</button>' +
-      '<div class="dk-clock" id="dk-clock" role="button" tabindex="0" data-dk="notifs"></div>';
+      '</div><div class="tb-right">' +
+      (A.settings.get('showFps') ? '<div class="fps hide-sm" aria-label="Frames per second"><span id="fps">60</span><small>FPS</small></div>' : '') +
+      '<button class="dk tb-tray hide-sm" data-dk="fullscreen" aria-label="Full screen" data-tip="Full screen">' + icon('fullscreen') + '</button>' +
+      '<button class="dk tb-tray dk-bell" data-dk="notifs" aria-label="Notifications" data-tip="Notifications">' + icon('bell') + (unread() ? '<span class="dk-badge">' + Math.min(99, unread()) + '</span>' : '') + '</button>' +
+      '<div class="dk-clock" id="dk-clock" role="button" tabindex="0" data-dk="notifs"></div></div>';
     tickClock();
   }
   dock.addEventListener('click', (e) => {
@@ -259,6 +265,8 @@
     const k = b.dataset.dk;
     if (k === 'start') return toggleStart();
     if (k === 'notifs') return toggleNotifs();
+    if (k === 'search') return openPalette();
+    if (k === 'fullscreen') { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen().catch(() => {}); return; }
     if (k === 'library') { const w = wins.get('app:games'); return w ? (restore(w), focus(w)) : openApp('games'); }
     const w = wins.get(k);
     if (w) { if (!w.min && active === k) minimize(w); else { restore(w); focus(w); } return; }
@@ -308,7 +316,7 @@
     if (lockEl) return;
     const u = A.auth.current(), m = A.meta.get(), lv = A.meta.levelInfo(m.xp);
     lockEl = A.ui.el('<div class="lock" role="dialog" aria-label="Lock screen"><div class="lock-top"><div class="lock-time" id="lock-time"></div><div class="lock-date" id="lock-date"></div></div>' +
-      '<div class="lock-bottom"><span class="avatar" style="width:64px;height:64px;font-size:26px;border-radius:20px;background:' + (u ? hueBg(u.hue) : '#27272a') + '">' + (u ? esc(u.username[0].toUpperCase()) : icon('user').replace('<svg', '<svg width="28" height="28"')) + '</span>' +
+      '<div class="lock-bottom"><span class="avatar" style="width:64px;height:64px;font-size:26px;border-radius:20px;background:' + (u ? hueBg(u.hue) : 'var(--tile)') + '">' + (u ? esc(u.username[0].toUpperCase()) : icon('user').replace('<svg', '<svg width="28" height="28"')) + '</span>' +
       '<b style="font-family:var(--font-os);font-weight:500;font-size:22px">' + (u ? esc(u.username) : 'Guest') + '</b><span style="color:var(--dim);font-size:14px">Level ' + lv.level + ' · ' + lv.title + (m.streak.count > 1 ? ' · ' + m.streak.count + '-day streak' : '') + '</span>' +
       '<button class="btn btn-primary btn-lg lock-go" style="margin-top:6px">' + icon('sparkles') + 'Enter Nova</button><span class="lock-hint">Click, tap or press any key</span></div></div>');
     document.body.appendChild(lockEl);
@@ -337,7 +345,7 @@
     const u = A.auth.current(), m = A.meta.get(), lv = A.meta.levelInfo(m.xp);
     const recent = m.recent.map((r) => byId(r.id)).filter(Boolean).slice(0, 4);
     start.innerHTML =
-      '<div class="start-user">' + (u ? '<span class="avatar" style="background:' + hueBg(u.hue) + '">' + esc(u.username[0].toUpperCase()) + '</span>' : '<span class="avatar" style="background:#27272a">' + icon('user').replace('<svg', '<svg width="22" height="22"') + '</span>') +
+      '<div class="start-user">' + (u ? '<span class="avatar" style="background:' + hueBg(u.hue) + '">' + esc(u.username[0].toUpperCase()) + '</span>' : '<span class="avatar" style="background:var(--tile)">' + icon('user').replace('<svg', '<svg width="22" height="22"') + '</span>') +
       '<div style="flex:1;min-width:0"><b>' + (u ? esc(u.username) : 'Guest') + '</b><div style="font-size:13px;color:var(--dim)">Level ' + lv.level + ' · ' + lv.title + ' · ' + m.xp.toLocaleString() + ' XP</div><div class="bar" style="margin-top:6px;height:5px"><i style="width:' + (lv.pct * 100) + '%"></i></div></div>' +
       (u ? '<button class="btn btn-sm" data-st="profile">' + icon('user') + 'Profile</button>' : '<button class="btn btn-primary btn-sm" data-st="signup">' + icon('user') + 'Sign up</button>') + '</div>' +
       '<label class="search-box"><span class="sr-only">Search</span>' + icon('search') + '<input class="input" id="start-q" placeholder="Search games and apps" autocomplete="off"></label>' +
@@ -394,14 +402,17 @@
       return { type: 'game', id: g.id, sc: sc ? sc + (g.popular ? 0.1 : 0) : 0 };
     }).filter((x) => x.sc > 0).sort((a, b) => b.sc - a.sc);
     const acts = [['random', 'Play a random game', 'shuffle'], ['wallpaper', 'Change wallpaper', 'image'], ['music', 'Toggle music', 'music']].filter((a) => a[1].toLowerCase().includes(v)).map((a) => ({ type: 'act', id: a[0], title: a[1], icon: a[2] }));
-    const out = gs.concat(apps, acts);
+    const looksUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(v);
+    const web = { type: 'act', id: 'web:' + v, title: (looksUrl ? 'Open ' : 'Search the web for “') + v + (looksUrl ? '' : '”'), icon: 'globe' };
+    const out = looksUrl ? [web].concat(gs, apps, acts) : gs.concat(apps, acts);
+    if (!looksUrl && v.length >= 2) out.splice(Math.min(out.length, 3), 0, web);
     if (!gs.length && v.length >= 2) out.push({ type: 'act', id: 'request:' + v, title: 'Request “' + v + '”', icon: 'send' });
     return out;
   }
   function itemHtml(it) {
     if (it.type === 'game') { const g = byId(it.id); return '<button class="sl" data-game="' + g.id + '">' + gameIco(g) + '<span><b>' + esc(g.title) + '</b><small>Game · ' + esc(g.tags.join(' · ')) + '</small></span></button>'; }
     if (it.type === 'app') return '<button class="sl" data-app="' + it.id + '">' + appIco(it.id) + '<span><b>' + esc(APPS[it.id].title) + '</b><small>App</small></span></button>';
-    return '<button class="sl" data-act="' + it.id + '"><span class="app-ico" style="width:38px;height:38px;border-radius:10px;background:#27272a">' + icon(it.icon) + '</span><span><b>' + esc(it.title) + '</b><small>Action</small></span></button>';
+    return '<button class="sl" data-act="' + esc(it.id) + '"><span class="app-ico" style="width:38px;height:38px;border-radius:10px">' + icon(it.icon) + '</span><span><b>' + esc(it.title) + '</b><small>' + (it.icon === 'globe' ? 'Browser' : 'Action') + '</small></span></button>';
   }
   let palette = null;
   function openPalette() {
@@ -436,6 +447,7 @@
   }
   function closePalette() { if (!palette) return; const p = palette; palette = null; try { document.activeElement.blur(); } catch (e) {} p.classList.remove('is-open'); setTimeout(() => p.remove(), 160); }
   function runAction(id) {
+    if (id.startsWith('web:')) { openBrowser(id.slice(4)); return; }
     if (id.startsWith('request:')) { const w = openApp('request'); setTimeout(() => { const t = w && $('#rq-t', w.body); if (t) { t.value = id.slice(8).replace(/\b\w/g, (c) => c.toUpperCase()); t.focus(); } }, 80); return; }
     if (id === 'closeall') { [...wins.values()].forEach(closeWindow); return; }
     if (id === 'random') randomGame();
@@ -481,7 +493,7 @@
     root.innerHTML =
       '<section data-wg="jump" class="wg span-6 os-glass"><div class="wg-head"><span class="os-label">Jump back in!</span>' + (last ? '<span class="pill">' + icon('clock') + ago(last.at) + '</span>' : '') + '</div>' +
       (last ? '<button class="wg-row" data-play="' + last.g.id + '"><span class="wg-ico" data-cover="' + last.g.id + '"></span><span class="wg-meta"><span class="wg-title" style="display:block">' + esc(last.g.title) + '</span><span class="wg-sub" style="display:block">Continue playing</span></span>' + icon('play', 'wg-chev') + '</button>'
-        : '<button class="wg-row" data-play="' + ft.id + '"><span class="wg-ico" style="background:linear-gradient(135deg,#f59e0b,#fde047)">' + icon('sparkles') + '</span><span class="wg-meta"><span class="wg-title" style="display:block">No recent game</span><span class="wg-sub" style="display:block">Try today’s pick: ' + esc(ft.title) + '</span></span>' + icon('chevronRight', 'wg-chev') + '</button>') + '</section>' +
+        : '<button class="wg-row" data-play="' + ft.id + '"><span class="wg-ico" style="background:var(--tile)">' + icon('sparkles') + '</span><span class="wg-meta"><span class="wg-title" style="display:block">No recent game</span><span class="wg-sub" style="display:block">Try today’s pick: ' + esc(ft.title) + '</span></span>' + icon('chevronRight', 'wg-chev') + '</button>') + '</section>' +
       '<section data-wg="quick" class="wg span-6 os-glass"><div class="wg-head"><span class="os-label">Quick play</span><button class="btn btn-sm btn-ghost" data-act="shuffle" aria-label="Shuffle">' + icon('shuffle') + 'Shuffle</button></div>' +
       '<button class="wg-row" data-play="' + q.id + '"><span class="wg-ico" data-cover="' + q.id + '"></span><span class="wg-meta"><span class="wg-title" style="display:block">' + esc(q.title) + '</span><span class="wg-sub" style="display:block">' + esc(q.tagline) + '</span></span>' + icon('play', 'wg-chev') + '</button></section>' +
       '<section data-wg="daily" class="wg os-glass"><div class="wg-head"><span class="os-label">Daily challenge</span>' + (dl.done ? '<span class="pill ok">' + icon('check') + 'Done</span>' : '<span class="pill hot">+' + dl.xp + ' XP</span>') + '</div>' +
@@ -491,7 +503,7 @@
       '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="os-label">Weekly</span>' + (wc.done ? '<span class="pill ok">' + icon('check') + 'Done</span>' : '<span class="pill hot">+500 XP</span>') + '</div>' +
       '<div style="margin-top:6px;font-weight:600">' + esc(wc.def.text) + '</div><div class="bar" style="margin-top:10px;height:6px"><i style="width:' + Math.round(wc.progress / wc.goal * 100) + '%"></i></div><div style="font-size:13px;color:var(--faint);margin-top:6px">' + progressText(wc) + '</div></div></section>' +
       '<section data-wg="level" class="wg os-glass"><div class="wg-head"><span class="os-label">Your level</span><span class="pill ' + (m.streak.count > 1 ? 'hot' : '') + '">' + icon('flame') + m.streak.count + '-day streak</span></div>' +
-      '<button class="wg-row" data-app="profile" style="padding:0"><span class="wg-ico" style="width:58px;height:58px;background:' + (u ? hueBg(u.hue) : '#27272a') + ';font:700 24px var(--font-os)">' + (u ? esc(u.username[0].toUpperCase()) : icon('user')) + '</span><span class="wg-meta"><span class="wg-title" style="display:block">Level ' + lv.level + ' · ' + lv.title + '</span><span class="wg-sub" style="display:block">' + lv.cur.toLocaleString() + ' / ' + lv.need.toLocaleString() + ' XP to next level</span></span></button>' +
+      '<button class="wg-row" data-app="profile" style="padding:0"><span class="wg-ico" style="width:58px;height:58px;background:' + (u ? hueBg(u.hue) : 'var(--tile)') + ';font:700 24px var(--font-os)">' + (u ? esc(u.username[0].toUpperCase()) : icon('user')) + '</span><span class="wg-meta"><span class="wg-title" style="display:block">Level ' + lv.level + ' · ' + lv.title + '</span><span class="wg-sub" style="display:block">' + lv.cur.toLocaleString() + ' / ' + lv.need.toLocaleString() + ' XP to next level</span></span></button>' +
       '<div class="bar" style="margin-top:14px"><i style="width:' + (lv.pct * 100) + '%"></i></div>' +
       '<div class="wg-actions"><button class="pill" data-app="achievements" style="cursor:pointer">' + icon('trophy') + achDone + '/' + achTotal + ' achievements</button>' + (u ? '' : '<button class="pill" data-act="signup" style="cursor:pointer">' + icon('cloud') + 'Sign up to sync</button>') + '</div></section>' +
       '<section data-wg="music" class="wg os-glass"><div class="wg-head"><span class="os-label">Now playing</span><button class="btn btn-sm btn-ghost" data-app="music">' + icon('music') + 'Open</button></div>' +
@@ -510,7 +522,7 @@
   }
   const WG_NAMES = { jump: 'Jump back in', quick: 'Quick play', daily: 'Daily challenge', level: 'Your level', music: 'Now playing', games: 'Games', system: 'System status' };
   let editing = false;
-  function layout() { const l = A.store.get('os.widgets', null); return l && Array.isArray(l.order) ? l : { order: Object.keys(WG_NAMES), hidden: [] }; }
+  function layout() { const l = A.store.get('os.widgets', null); return l && Array.isArray(l.order) ? l : { order: ['music', 'jump', 'daily', 'level', 'quick', 'games', 'system'], hidden: ['system'] }; }
   function applyLayout(root) {
     const L = layout(), secs = {}; $$('[data-wg]', root).forEach((el) => (secs[el.dataset.wg] = el));
     const order = L.order.filter((k) => secs[k]).concat(Object.keys(secs).filter((k) => !L.order.includes(k)));
@@ -535,6 +547,16 @@
     return dl.progress + ' / ' + dl.goal;
   }
   function pickQuick(m) { const fresh = LIVE.filter((g) => !m.tried[g.id] && g.id !== quickId); const pool = fresh.length ? fresh : LIVE; return pool[Math.floor(Math.random() * pool.length)].id; }
+  /* desktop search: games first, otherwise the web */
+  const heroQ = $('#hero-q');
+  if (heroQ) {
+    $('#hero-form').addEventListener('submit', (e) => {
+      e.preventDefault(); const v = heroQ.value.trim(); if (!v) return;
+      const top = searchItems(v)[0]; heroQ.value = ''; heroQ.blur();
+      if (top && top.type === 'game' && top.sc >= 2) openGame(top.id); else if (top && top.type === 'app') openApp(top.id); else openBrowser(v);
+    });
+    $('#hero-links').addEventListener('click', (e) => { const b = e.target.closest('[data-hero]'); if (!b) return; const k = b.dataset.hero; if (k === 'random') randomGame(); else if (k === 'browser') openBrowser(); else openApp(k); });
+  }
   $('#os-date').addEventListener('click', (e) => { if (e.target.closest('#wg-edit-btn')) { editing = !editing; A.audio.sfx('toggle'); paintHome(); tickClock(); } });
   $('#widgets').addEventListener('click', (e) => {
     const we = e.target.closest('[data-we]'); if (we) { e.stopPropagation(); editWidget(we.dataset.k, we.dataset.we); return; }
@@ -562,6 +584,25 @@
       vizRaf = requestAnimationFrame(loop);
     };
     if (!A.settings.reducedMotion()) vizRaf = requestAnimationFrame(loop);
+  }
+
+  /* ======================================================== APP: BROWSER */
+  // Scramjet proxy lives at /proxy/ (its own page + service worker); this window frames it.
+  let browserQueue = null;
+  function openBrowser(q) {
+    const w = wins.get('app:browser');
+    if (w && w.frame) { restore(w); focus(w); if (q) w.frame.contentWindow.postMessage({ nova: 'go', q }, location.origin); return w; }
+    browserQueue = q || null;
+    return openApp('browser');
+  }
+  function renderBrowser(body, win) {
+    body.classList.add('is-frame');
+    body.innerHTML = '<div class="win-loading"><div style="display:grid;justify-items:center;gap:14px">' + appIco('browser', 'wg-ico') + '<div class="spin"></div></div></div><iframe title="Browser" allow="fullscreen; autoplay; clipboard-read; clipboard-write; camera; microphone; geolocation"></iframe>';
+    const f = $('iframe', body); win.frame = f;
+    f.addEventListener('load', () => $('.win-loading', body).classList.add('is-done'));
+    f.src = 'proxy/' + (browserQueue ? '#q=' + encodeURIComponent(browserQueue) : '');
+    browserQueue = null;
+    return () => { try { f.src = 'about:blank'; } catch (e) {} };
   }
 
   /* ========================================================== APP: GAMES */
@@ -599,7 +640,7 @@
       let html = '';
       if (!q && filter === 'all' && sort === 'popular') {
         const ft = A.meta.featured();
-        html += '<div class="lib-hero" data-play="' + ft.id + '" data-cover="' + ft.id + '"><div class="in"><span class="os-label" style="color:#fcd34d">Featured today</span><h3>' + esc(ft.title) + '</h3><p>' + esc(ft.tagline) + '</p><div><button class="btn btn-primary" data-play="' + ft.id + '">' + icon('play') + 'Play now</button></div></div></div>';
+        html += '<div class="lib-hero" data-play="' + ft.id + '" data-cover="' + ft.id + '"><div class="in"><span class="os-label" style="color:var(--primary-2)">Featured today</span><h3>' + esc(ft.title) + '</h3><p>' + esc(ft.tagline) + '</p><div><button class="btn btn-primary" data-play="' + ft.id + '">' + icon('play') + 'Play now</button></div></div></div>';
         const trm = A.scores.trendingCached(), trend = LIVE.filter((g) => trm[g.id] && trm[g.id].recent > 0).sort((a, b) => trm[b.id].recent - trm[a.id].recent).slice(0, 8);
         if (trend.length >= 3) html += '<section style="display:grid;gap:12px"><div class="sec-title"><h4>Trending on Nova</h4><span class="pill hot">' + icon('flame') + 'This week</span></div><div class="row-scroll">' + trend.map((g) => cardHtml(g, m)).join('') + '</div></section>';
         const rec = m.recent.map((x) => byId(x.id)).filter(Boolean).slice(0, 8);
@@ -633,8 +674,8 @@
   }
 
   /* ========================================================== APP: MUSIC */
-  const GEN_BG = { neon: 'linear-gradient(135deg,#ec4899,#8b5cf6)', lofi: 'linear-gradient(135deg,#0ea5e9,#6366f1)', chip: 'linear-gradient(135deg,#22c55e,#eab308)' };
-  const stBg = (st) => 'linear-gradient(135deg,hsl(' + st.hue + ' 85% 58%),hsl(' + ((st.hue + 50) % 360) + ' 80% 45%))';
+  const GEN_BG = { neon: 'linear-gradient(135deg,#a855f7,#4c1d95)', lofi: 'linear-gradient(135deg,#7c3aed,#1e1b4b)', chip: 'linear-gradient(135deg,#c084fc,#5b21b6)' };
+  const stBg = (st) => hueBg(st.hue);
   function musicArt(n, size, spin) {
     const st = n.station, bg = n.kind === 'file' ? stBg(st) : (GEN_BG[n.key] || GEN_BG.neon);
     const r = Math.round(size * 0.24);
@@ -744,7 +785,7 @@
       const u = A.auth.current(), m = A.meta.get(), lv = A.meta.levelInfo(m.xp), sum = A.scores.summary();
       const favs = m.favs.map(byId).filter(Boolean), rec = m.recent.map((r) => byId(r.id)).filter(Boolean).slice(0, 6);
       body.innerHTML = '<div class="app">' +
-        '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><span class="avatar" style="width:76px;height:76px;font-size:32px;border-radius:22px;background:' + (u ? hueBg(u.hue) : '#27272a') + '">' + (u ? esc(u.username[0].toUpperCase()) : icon('user').replace('<svg', '<svg width="34" height="34"')) + '</span>' +
+        '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><span class="avatar" style="width:76px;height:76px;font-size:32px;border-radius:22px;background:' + (u ? hueBg(u.hue) : 'var(--tile)') + '">' + (u ? esc(u.username[0].toUpperCase()) : icon('user').replace('<svg', '<svg width="34" height="34"')) + '</span>' +
         '<div style="flex:1;min-width:200px"><h2>' + (u ? esc(u.username) : 'Guest player') + '</h2><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' +
         (u && A.auth.isOwner() ? '<span class="badge badge-pro">' + icon('crown') + 'Owner</span>' : '') + '<span class="badge">Level ' + lv.level + ' · ' + lv.title + '</span>' +
         '<span class="badge">' + icon(u && u.cloud ? 'cloud' : 'phone') + (u && u.cloud ? 'Synced to cloud' : 'Saved on this device') + '</span></div></div>' +
@@ -753,7 +794,7 @@
         (u ? '' : '<div class="side-guest" style="padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(244,63,94,.12));border:1px solid var(--line)">Your progress is saved on this device. Make a free account to keep your XP, achievements and saves on every device and join the global leaderboard.</div>') +
         '<div><div style="display:flex;justify-content:space-between;font-size:14px;color:var(--dim);margin-bottom:6px"><span>Level ' + lv.level + '</span><span>' + lv.cur.toLocaleString() + ' / ' + lv.need.toLocaleString() + ' XP</span></div><div class="bar"><i style="width:' + (lv.pct * 100) + '%"></i></div></div>' +
         '<div class="stat-grid"><div class="stat"><span>Total XP</span><b>' + m.xp.toLocaleString() + '</b></div><div class="stat"><span>Games tried</span><b>' + Object.keys(m.tried).length + ' / ' + LIVE.length + '</b></div><div class="stat"><span>Time played</span><b>' + A.ui.fmtTime(Math.max(m.secs, sum.time)) + '</b></div><div class="stat"><span>Streak</span><b>' + m.streak.count + ' days</b></div><div class="stat"><span>Achievements</span><b>' + Object.keys(m.ach).length + '</b></div><div class="stat"><span>Best Snake</span><b>' + A.scores.best('snake').toLocaleString() + '</b></div></div>' +
-        (Object.keys(m.ach).length ? '<section style="display:grid;gap:10px"><div class="os-label">Trophy case</div><div style="display:flex;gap:8px;flex-wrap:wrap">' + A.meta.achievements.filter((x) => m.ach[x.id]).map((x) => '<span class="pill" title="' + esc(x.desc) + '" style="color:#fcd34d;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.08)">' + icon(x.icon) + esc(x.title) + '</span>').join('') + '</div></section>' : '') +
+        (Object.keys(m.ach).length ? '<section style="display:grid;gap:10px"><div class="os-label">Trophy case</div><div style="display:flex;gap:8px;flex-wrap:wrap">' + A.meta.achievements.filter((x) => m.ach[x.id]).map((x) => '<span class="pill" title="' + esc(x.desc) + '" style="color:#d8b4fe;border-color:rgba(167,139,250,.4);background:rgba(139,92,246,.1)">' + icon(x.icon) + esc(x.title) + '</span>').join('') + '</div></section>' : '') +
                 '<section style="display:grid;gap:10px"><div class="os-label">Favorites</div>' + (favs.length ? '<div class="mini-grid">' + favs.map((g) => '<button class="mini" data-play="' + g.id + '" data-cover="' + g.id + '"><span>' + esc(g.title) + '</span></button>').join('') + '</div>' : '<p class="field-hint">Tap the heart on a game to save it here.</p>') + '</section>' +
         '<section style="display:grid;gap:10px"><div class="os-label">Recently played</div>' + (rec.length ? '<div class="start-list">' + rec.map((g) => '<button class="sl" data-play="' + g.id + '">' + gameIco(g) + '<span><b>' + esc(g.title) + '</b><small>' + ago(m.recent.find((r) => r.id === g.id).at) + '</small></span></button>').join('') + '</div>' : '<p class="field-hint">Nothing yet — go play something!</p>') + '</section></div>';
       fillCovers(body);
@@ -833,7 +874,7 @@
   function confetti(n) {
     if (A.settings.reducedMotion()) return;
     const c = document.createElement('canvas'); c.className = 'confetti'; c.width = innerWidth; c.height = innerHeight; document.body.appendChild(c);
-    const x = c.getContext('2d'), cols = ['#a78bfa', '#f472b6', '#fbbf24', '#34d399', '#60a5fa', '#ffffff'];
+    const x = c.getContext('2d'), cols = ['#a78bfa', '#c084fc', '#8b5cf6', '#e9d5ff', '#7c3aed', '#ffffff'];
     const P = Array.from({ length: n || 160 }, () => ({ x: innerWidth / 2 + (Math.random() - 0.5) * 200, y: innerHeight * 0.55, vx: (Math.random() - 0.5) * 16, vy: -8 - Math.random() * 12, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.4, s: 5 + Math.random() * 6, c: cols[(Math.random() * cols.length) | 0] }));
     let t0 = performance.now();
     (function f(now) {

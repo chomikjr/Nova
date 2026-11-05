@@ -1,45 +1,40 @@
 /* ==========================================================================
    NOVA ARCADE — shared styles
-   Design tokens: neon violet + rose on deep space navy.
-   Fonts: Russo One (display) / Chakra Petch (UI)
+   Design tokens: galaxy — violet on near-black.
+   Fonts: Orbitron (display) / Space Grotesk (UI) / JetBrains Mono (labels)
    ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Russo+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
-  --bg: #0b0b1d;
-  --bg-2: #12112a;
-  --card: rgba(30, 28, 53, 0.72);
-  --card-solid: #1e1c35;
-  --muted: #27273b;
-  --fg: #e8ecf4;
-  --fg-dim: #a3adc2;
-  --fg-faint: #6b7590;
+  --bg: #05030b;
+  --bg-2: #0b0716;
+  --card: rgba(18, 11, 34, 0.72);
+  --card-solid: #120b22;
+  --muted: #1d1433;
+  --fg: #efeaff;
+  --fg-dim: #b4a8d6;
+  --fg-faint: #7a6e9c;
   --primary: #8b5cf6;
-  --primary-2: #a78bfa;
+  --primary-2: #c4b5fd;
   --primary-glow: rgba(139, 92, 246, 0.45);
-  --accent: #f43f5e;
-  --accent-2: #fb7185;
-  --success: #34d399;
-  --warn: #fbbf24;
-  --border: rgba(167, 139, 250, 0.18);
-  --border-strong: rgba(167, 139, 250, 0.4);
-  --radius-sm: 10px;
-  --radius: 16px;
-  --radius-lg: 24px;
-  --shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
+  --accent: #a855f7;
+  --accent-2: #d8b4fe;
+  --success: #a78bfa;
+  --warn: #c084fc;
+  --border: rgba(167, 139, 250, 0.2);
+  --border-strong: rgba(167, 139, 250, 0.42);
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7);
   --shadow-glow: 0 0 0 1px var(--border), 0 20px 60px -20px var(--primary-glow);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --font-display: 'Russo One', system-ui, sans-serif;
-  --font-ui: 'Chakra Petch', system-ui, sans-serif;
+  --font-display: 'Orbitron', 'Space Grotesk', system-ui, sans-serif;
+  --font-ui: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   color-scheme: dark;
 }
-
-/* Accent themes (set via Settings) */
-:root[data-accent='cyan']   { --primary:#06b6d4; --primary-2:#67e8f9; --primary-glow:rgba(6,182,212,.45);  --border:rgba(103,232,249,.18); --border-strong:rgba(103,232,249,.4); }
-:root[data-accent='lime']   { --primary:#65a30d; --primary-2:#a3e635; --primary-glow:rgba(132,204,22,.4); --border:rgba(163,230,53,.18); --border-strong:rgba(163,230,53,.4); }
-:root[data-accent='sunset'] { --primary:#ea580c; --primary-2:#fb923c; --primary-glow:rgba(249,115,22,.45); --border:rgba(251,146,60,.2);  --border-strong:rgba(251,146,60,.42); }
-:root[data-accent='rose']   { --primary:#e11d48; --primary-2:#fb7185; --primary-glow:rgba(244,63,94,.45);  --border:rgba(251,113,133,.2); --border-strong:rgba(251,113,133,.42); --accent:#8b5cf6; --accent-2:#a78bfa; }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
@@ -156,7 +151,7 @@ p { margin: 0; }
   background: rgba(139,92,246,.15); color: var(--primary-2); border: 1px solid var(--border);
 }
 .badge svg { width: 13px; height: 13px; }
-.badge-pro { background: linear-gradient(135deg, rgba(251,191,36,.2), rgba(244,63,94,.2)); color: #fcd34d; border-color: rgba(251,191,36,.35); }
+.badge-pro { background: rgba(139,92,246,.18); color: #d8b4fe; border-color: rgba(167,139,250,.45); }
 .badge-free { background: rgba(52,211,153,.12); color: var(--success); border-color: rgba(52,211,153,.3); }
 .chip {
   min-height: 38px; padding: 0 16px; border-radius: 999px;

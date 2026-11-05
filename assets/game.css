@@ -21,7 +21,7 @@ body.game-page { height: 100vh; height: 100dvh; display: flex; flex-direction: c
 .hud-chip b { font-family: var(--font-display); font-weight: 400; font-size: 20px; line-height: 1.2; font-variant-numeric: tabular-nums; }
 .hud-chip.bump b { animation: bump .35s var(--ease-spring); }
 .hud-chip.hot { border-color: rgba(251,191,36,.5); box-shadow: 0 0 20px -6px rgba(251,191,36,.6); }
-.hud-chip.hot b { color: #fcd34d; }
+.hud-chip.hot b { color: #d8b4fe; }
 @keyframes bump { 40% { transform: scale(1.3); color: var(--primary-2); } }
 .g-actions { display: flex; gap: 8px; align-items: center; }
 
@@ -65,7 +65,7 @@ body.game-page { height: 100vh; height: 100dvh; display: flex; flex-direction: c
 .ov-score { font-family: var(--font-display); font-size: clamp(48px, 9vw, 72px); line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 30px var(--primary-glow); }
 .ov-record {
   justify-self: center; display: inline-flex; gap: 8px; align-items: center; padding: 6px 14px; border-radius: 999px;
-  background: linear-gradient(135deg, #fbbf24, #f43f5e); color: #1a0510; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 13px;
+  background: linear-gradient(135deg, #c084fc, #7c3aed); color: #12061f; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 13px;
   animation: record-pulse 1.2s ease-in-out infinite;
 }
 .ov-record svg { width: 16px; height: 16px; }
@@ -80,7 +80,7 @@ body.game-page { height: 100vh; height: 100dvh; display: flex; flex-direction: c
 .ov-option > span { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--fg-faint); }
 .ov-option .ov-row { justify-content: flex-start; }
 .ov-option .chip { display: inline-flex; align-items: center; gap: 6px; }
-.ov-option .chip svg { width: 14px; height: 14px; color: #fcd34d; }
+.ov-option .chip svg { width: 14px; height: 14px; color: #d8b4fe; }
 .ov-hint { font-size: 13px; color: var(--fg-faint); }
 .ov-hint kbd, .ctrl-row kbd {
   display: inline-block; min-width: 24px; padding: 1px 7px; border-radius: 6px; font: 600 12px var(--font-ui);
@@ -98,7 +98,7 @@ body.game-page { height: 100vh; height: 100dvh; display: flex; flex-direction: c
 .lb li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.22); font-size: 14px; }
 .lb li.me { outline: 1px solid var(--border-strong); background: rgba(139,92,246,.12); }
 .lb .rk { width: 22px; font-family: var(--font-display); color: var(--fg-faint); }
-.lb li:nth-child(1) .rk { color: #fcd34d; } .lb li:nth-child(2) .rk { color: #cbd5e1; } .lb li:nth-child(3) .rk { color: #f59e0b; }
+.lb li:nth-child(1) .rk { color: #e9d5ff; } .lb li:nth-child(2) .rk { color: #c4b5fd; } .lb li:nth-child(3) .rk { color: #a78bfa; }
 .lb .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .lb .sc { font-variant-numeric: tabular-nums; font-weight: 700; }
 .lb .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
