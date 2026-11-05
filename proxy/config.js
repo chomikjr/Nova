@@ -8,7 +8,7 @@
    ========================================================================== */
 window.NOVA_PROXY = {
   servers: [
-    // { name: 'Server 1', url: 'wss://YOUR-WISP-SERVER/wisp/' },
+    { name: 'Server 1', url: 'wss://nova-wisp-1.onrender.com/wisp/' },
   ],
   searchEngine: 'https://duckduckgo.com/?q=%s',
   quickLinks: [
