@@ -84,7 +84,7 @@
     function paintAccount() {
       const u = A.auth.current(), slot = $('#account');
       slot.innerHTML = u
-        ? '<button class="avatar" style="border:0;cursor:pointer;background:linear-gradient(135deg,hsl(' + u.hue + ',80%,60%),hsl(' + (u.hue + 60) + ',80%,55%))" aria-label="Your profile">' + esc(u.username[0].toUpperCase()) + '</button>'
+        ? '<button class="avatar" style="border:0;cursor:pointer;background:linear-gradient(135deg,hsl(' + (255 + u.hue % 36) + ',78%,58%),hsl(' + (265 + u.hue % 20) + ',72%,22%))" aria-label="Your profile">' + esc(u.username[0].toUpperCase()) + '</button>'
         : '<button class="btn btn-primary btn-sm">' + icon('user') + '<span class="hide-sm">Log in</span></button>';
       slot.firstElementChild.addEventListener('click', () => (u ? A.ui.openProfile() : A.ui.openAuth()));
     }

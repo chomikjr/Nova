@@ -933,6 +933,10 @@
     cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
     keyboard: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/>',
     search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+    arrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+    fullscreen: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+    nova: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>',
     bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
     trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
     info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
@@ -1467,7 +1471,7 @@
      SETTINGS
      ------------------------------------------------------------------------ */
   const DEFAULTS = {
-    bg: 'void', music: true, track: 'auto', shuffle: false, musicVol: 0.45, sfx: true, sfxVol: 0.7,
+    bg: 'galaxy', music: true, track: 'auto', shuffle: false, musicVol: 0.45, sfx: true, sfxVol: 0.7,
     accent: 'violet', crt: false, reducedMotion: false, shake: true, pauseMusicInGames: true, showFps: true, clock24: false, gamesMaximized: true, lockScreen: true
   };
   const settings = {
@@ -1489,7 +1493,7 @@
   };
   function applySettings(changed) {
     const r = document.documentElement;
-    r.dataset.accent = settings.get('accent');
+    r.dataset.accent = 'violet';
     r.dataset.crt = settings.get('crt') ? 'on' : 'off';
     r.dataset.reducedMotion = settings.get('reducedMotion') ? 'on' : 'off';
     if (!changed || changed === 'musicVol' || changed === 'sfxVol' || changed === 'sfx') audio.applyVolumes();
@@ -1847,6 +1851,55 @@
 
   const rand = (r) => r();
   const PRESETS = {
+    galaxy: {
+      name: 'Galaxy', scale: 0.6,
+      setup(c, w, h, S) {
+        const r = seededRand(2026), R = Math.max(w, h);
+        const o = document.createElement('canvas'); o.width = w; o.height = h; const oc = o.getContext('2d');
+        oc.fillStyle = '#04020a'; oc.fillRect(0, 0, w, h);
+        // nebula clouds — violet, indigo and magenta-purple only
+        [['124,58,237', .22, .30, .55, .30], ['76,29,149', .78, .72, .6, .34], ['168,85,247', .62, .22, .38, .16], ['49,46,129', .18, .82, .5, .26], ['192,132,252', .48, .52, .22, .10]].forEach(([col, x, y, rad, a]) => {
+          const g = oc.createRadialGradient(w * x, h * y, 0, w * x, h * y, R * rad);
+          g.addColorStop(0, 'rgba(' + col + ',' + a + ')'); g.addColorStop(1, 'rgba(' + col + ',0)'); oc.fillStyle = g; oc.fillRect(0, 0, w, h);
+        });
+        // dust lane
+        oc.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 1400; i++) {
+          const u = rand(r), off = (rand(r) - 0.5) * (0.12 + 0.2 * rand(r));
+          const x = u * w, y = h * (0.85 - u * 0.6 + off + 0.08 * Math.sin(u * 7));
+          oc.fillStyle = 'rgba(' + (180 + rand(r) * 60 | 0) + ',' + (150 + rand(r) * 60 | 0) + ',255,' + (0.05 + rand(r) * 0.18) + ')';
+          const s = rand(r) * 1.4 + 0.3; oc.fillRect(x, y, s, s);
+        }
+        oc.globalCompositeOperation = 'source-over';
+        for (let i = 0; i < 700; i++) { oc.fillStyle = 'rgba(235,225,255,' + (0.15 + rand(r) * 0.5) + ')'; const s = rand(r) < 0.92 ? 0.8 : 1.6; oc.fillRect(rand(r) * w, rand(r) * h, s, s); }
+        S.base = o;
+        S.tw = Array.from({ length: 90 }, () => [rand(r) * w, rand(r) * h, rand(r) * 6, 0.6 + rand(r) * 1.6]);
+      },
+      draw(c, w, h, t, dt, S) {
+        c.drawImage(S.base, 0, 0);
+        const px = (pointer.x - 0.5), py = (pointer.y - 0.5), R = Math.min(w, h);
+        // the ribbon: a soft, slowly breathing curve of light
+        c.globalCompositeOperation = 'lighter';
+        for (let k = 0; k < 3; k++) {
+          c.beginPath();
+          for (let i = 0; i <= 60; i++) {
+            const u = i / 60;
+            const x = w * (-0.05 + u * 1.1) + px * 20 * (k + 1);
+            const y = h * (0.62 + 0.22 * Math.sin(u * 3.1 + 0.6 + t * 0.12 + k * 0.08) - 0.28 * u) + py * 14 * (k + 1);
+            i ? c.lineTo(x, y) : c.moveTo(x, y);
+          }
+          c.strokeStyle = k === 0 ? 'rgba(245,240,255,.55)' : k === 1 ? 'rgba(196,181,253,.28)' : 'rgba(139,92,246,.16)';
+          c.lineWidth = k === 0 ? Math.max(1.2, R * 0.0025) : R * (k === 1 ? 0.012 : 0.04);
+          c.shadowColor = 'rgba(167,139,250,.9)'; c.shadowBlur = k === 0 ? 18 : 0;
+          c.stroke();
+        }
+        c.shadowBlur = 0;
+        S.tw.forEach((s) => { const a = 0.25 + 0.75 * Math.abs(Math.sin(t * s[3] + s[2])); c.fillStyle = 'rgba(233,213,255,' + a + ')'; c.fillRect(s[0], s[1], 1.6, 1.6); });
+        c.globalCompositeOperation = 'source-over';
+        const v = c.createRadialGradient(w / 2, h * 0.45, R * 0.35, w / 2, h / 2, Math.max(w, h) * 0.8);
+        v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.6)'); c.fillStyle = v; c.fillRect(0, 0, w, h);
+      }
+    },
     void: {
       name: 'Void', scale: 0.55,
       setup(c, w, h, S) {
@@ -2368,7 +2421,7 @@
     }).join('');
     modal(
       '<div style="display:flex;align-items:center;gap:16px;margin-bottom:22px">' +
-      '<div class="avatar" style="width:64px;height:64px;font-size:26px;border-radius:18px;background:linear-gradient(135deg,hsl(' + u.hue + ',80%,60%),hsl(' + (u.hue + 60) + ',80%,55%))">' + esc(u.username[0].toUpperCase()) + '</div>' +
+      '<div class="avatar" style="width:64px;height:64px;font-size:26px;border-radius:18px;background:linear-gradient(135deg,hsl(' + (255 + u.hue % 36) + ',78%,58%),hsl(' + (265 + u.hue % 20) + ',72%,22%))">' + esc(u.username[0].toUpperCase()) + '</div>' +
       '<div><h2 style="margin:0">' + esc(u.username) + '</h2><div style="display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap">' + (auth.isOwner() ? '<span class="badge badge-pro">' + icon('crown') + 'Owner</span>' : '') + '<span class="badge">' + icon(u.cloud ? 'cloud' : 'phone') + (u.cloud ? 'Synced' : 'This device') + '</span><span class="field-hint">Joined ' + new Date(u.created).toLocaleDateString() + '</span></div></div></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">' +
       '<div class="glass" style="padding:16px"><div class="field-hint">Games played</div><div style="font-family:var(--font-display);font-size:28px">' + sum.plays + '</div></div>' +
@@ -2398,7 +2451,6 @@
       sw('sfx', s.sfx, 'Sound effects') +
       '<div class="setting-row"><label class="label" for="set-sv">Effects volume</label><input class="range" type="range" id="set-sv" min="0" max="1" step="0.05" value="' + s.sfxVol + '"></div></section>' +
       '<section class="settings-group"><h3>Look &amp; feel</h3>' +
-      '<div class="setting-row"><div class="label">Accent color</div><div class="swatches">' + ACCENTS.map(([k, c]) => '<button class="swatch" style="background:' + c + '" data-accent="' + k + '" aria-label="' + k + ' accent" aria-pressed="' + (s.accent === k) + '"></button>').join('') + '</div></div>' +
       sw('crt', s.crt, 'CRT scanlines', 'Retro monitor overlay') +
       sw('shake', s.shake, 'Screen shake', 'Impact feedback in games') +
       sw('reducedMotion', s.reducedMotion, 'Reduce motion', 'Freeze backgrounds and calm animations') + '</section>' +

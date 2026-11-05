@@ -65,7 +65,7 @@
     function paintAccount() {
       const u = A.auth.current(), slot = $('.g-account');
       slot.innerHTML = u
-        ? '<button class="avatar" style="border:0;cursor:pointer;background:linear-gradient(135deg,hsl(' + u.hue + ',80%,60%),hsl(' + (u.hue + 60) + ',80%,55%))" aria-label="Your profile">' + esc(u.username[0].toUpperCase()) + '</button>'
+        ? '<button class="avatar" style="border:0;cursor:pointer;background:linear-gradient(135deg,hsl(' + (255 + u.hue % 36) + ',78%,58%),hsl(' + (265 + u.hue % 20) + ',72%,22%))" aria-label="Your profile">' + esc(u.username[0].toUpperCase()) + '</button>'
         : '<button class="btn btn-primary btn-sm">' + icon('user') + '<span class="hide-sm">Log in</span></button>';
       slot.firstElementChild.addEventListener('click', () => { if (g.state === 'playing') pause(); u ? A.ui.openProfile() : A.ui.openAuth(); });
     }
@@ -98,7 +98,7 @@
         }
       },
       confetti() {
-        for (let i = 0; i < 140; i++) fx.parts.push({ x: Math.random() * W, y: -20 - Math.random() * H * 0.4, vx: (Math.random() - 0.5) * 120, vy: 80 + Math.random() * 160, life: 3, max: 3, size: 4 + Math.random() * 4, color: ['#a78bfa', '#f43f5e', '#fbbf24', '#34d399', '#22d3ee'][i % 5], g: 60, drag: 0.4, shape: 'rect', rot: Math.random() * 6 });
+        for (let i = 0; i < 140; i++) fx.parts.push({ x: Math.random() * W, y: -20 - Math.random() * H * 0.4, vx: (Math.random() - 0.5) * 120, vy: 80 + Math.random() * 160, life: 3, max: 3, size: 4 + Math.random() * 4, color: ['#a78bfa', '#c084fc', '#8b5cf6', '#e9d5ff', '#7c3aed'][i % 5], g: 60, drag: 0.4, shape: 'rect', rot: Math.random() * 6 });
       }
     };
     function floatText(text, x, y, o) { o = o || {}; fx.texts.push({ text, x, y, life: o.life || 0.9, max: o.life || 0.9, color: o.color || '#fff', size: o.size || 22 }); }
@@ -144,7 +144,7 @@
       addScore(n, x, y, color) {
         g.score += n; setHud('score', g.score, true);
         if (x != null) floatText('+' + n, x, y, { color: color || '#fff' });
-        if (g.score > bestAtStart && !g.data._beatBest && bestAtStart > 0) { g.data._beatBest = true; floatText('NEW BEST!', W / 2, H * 0.2, { color: '#fcd34d', size: 34, life: 1.4 }); A.audio.sfx('levelup'); }
+        if (g.score > bestAtStart && !g.data._beatBest && bestAtStart > 0) { g.data._beatBest = true; floatText('NEW BEST!', W / 2, H * 0.2, { color: '#d8b4fe', size: 34, life: 1.4 }); A.audio.sfx('levelup'); }
       },
       hud: { set: (k, v, bump, hot) => setHud(k, v, bump, hot) },
       over: (o) => gameOver(o || {}),
@@ -193,7 +193,7 @@
       show('<div class="ov-card">' +
         (def.tagline ? '<p class="eyebrow">' + esc(def.tagline) + '</p>' : '') +
         '<h2>' + esc(def.title) + '</h2>' +
-        (best ? '<p class="ov-sub">' + icon('trophy').replace('<svg', '<svg style="display:inline;width:16px;height:16px;vertical-align:-2px;color:#fcd34d"') + ' Personal best <b style="color:var(--fg)">' + best.toLocaleString() + '</b></p>' : (def.instructions ? '<p class="ov-sub">' + esc(def.instructions) + '</p>' : '')) +
+        (best ? '<p class="ov-sub">' + icon('trophy').replace('<svg', '<svg style="display:inline;width:16px;height:16px;vertical-align:-2px;color:#d8b4fe"') + ' Personal best <b style="color:var(--fg)">' + best.toLocaleString() + '</b></p>' : (def.instructions ? '<p class="ov-sub">' + esc(def.instructions) + '</p>' : '')) +
         optionsHtml() +
         '<div class="ov-actions"><button class="btn btn-primary btn-lg ov-play">' + icon('play') + 'Play</button></div>' +
         '<p class="ov-hint">Press ' + kbd('Space') + ' or ' + kbd('Enter') + ' to start</p></div>');
@@ -288,7 +288,7 @@
       const paintLb = (rows, scope) => {
         const el = side.querySelector('.sd-lb'); if (!el) return;
         el.innerHTML = '<h3>' + icon('chart') + 'Leaderboard <span class="badge" style="margin-left:auto">' + (scope === 'global' ? 'Global' : 'This device') + '</span></h3>' +
-          (rows.length ? '<ol class="lb">' + rows.map((r, i) => '<li class="' + (r.me ? 'me' : '') + '"><span class="rk">' + (i + 1) + '</span><span class="dot" style="background:hsl(' + r.hue + ',80%,60%)"></span><span class="nm">' + esc(r.name) + '</span><span class="sc">' + r.best.toLocaleString() + '</span></li>').join('') + '</ol>' : '<p class="side-empty">No scores yet — be the first.</p>');
+          (rows.length ? '<ol class="lb">' + rows.map((r, i) => '<li class="' + (r.me ? 'me' : '') + '"><span class="rk">' + (i + 1) + '</span><span class="dot" style="background:hsl(' + (255 + r.hue % 36) + ',75%,62%)"></span><span class="nm">' + esc(r.name) + '</span><span class="sc">' + r.best.toLocaleString() + '</span></li>').join('') + '</ol>' : '<p class="side-empty">No scores yet — be the first.</p>');
       };
       paintLb(lb, 'device');
       A.scores.leaderboardAsync(def.id, 6).then((r) => paintLb(r.rows, r.scope));

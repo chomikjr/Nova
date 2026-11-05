@@ -1,12 +1,12 @@
 {
   "name": "Nova OS",
   "short_name": "Nova",
-  "description": "A free game desktop: 50 games, XP, achievements and cloud saves.",
+  "description": "A free game desktop: 400+ games, a built-in browser, XP, achievements and cloud saves.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#050507",
-  "theme_color": "#050507",
+  "background_color": "#04020a",
+  "theme_color": "#04020a",
   "icons": [
     { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
