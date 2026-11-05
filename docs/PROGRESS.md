@@ -41,6 +41,11 @@ _Last updated: 2026-11-03. Read this first when resuming._
 - **Built here from source:** Candy Box 2 (TypeScript 1.8 `lib/tsc.js` from microsoft/TypeScript tag v1.8.10, `tsc ... --out`, unminified),
   Q1K3 (`pack_map.c` + `pack_model.php` → `build/l`, `build/m`; served via the repo's dev `index.html`).
 
+## Live wallpapers (2026-11-05)
+- Smoke (default), Star Swirl, Pink Moon, Northern Lights, Nebula Drift are WebGL shaders in `assets/shaders.js`, drawn at the screen's
+  own resolution (sharp at 4K), 30 fps cap, auto-lowering resolution on slow devices. Stills `assets/wallpapers/<id>.jpg` (2560×1440)
+  are used for Settings tiles, Reduce motion and browsers without WebGL. The earlier GIF-based video wallpapers were removed.
+
 ## Desktop redesign (2026-11-04, replaces the glowing galaxy look)
 - Goal: look like a real OS, not AI-made. Rules: one font (Onest, self-hosted in assets/fonts), sentence-case labels (no tracked ALL-CAPS),
   no glow / gradient blobs, solid violet-black panels, violet only for selection/progress, no '·' separators in UI copy.

@@ -1872,12 +1872,65 @@
     return def;
   }
   function videoPreset(name, base, o) { const d = imagePreset(name, base + '.jpg', o); d.video = base; return d; }
+  /* Live (WebGL) wallpapers from assets/shaders.js. Previews, Reduce motion and browsers without
+     WebGL use the pre-rendered still <id>.jpg; on the page the shader runs at the screen's own
+     resolution (4K included), capped at 30 fps, lowering its resolution if the device can't keep up. */
+  function livePreset(name, id) { const d = imagePreset(name, id + '.jpg'); d.gl = id; return d; }
+  function glRunner(canvas) {
+    const gl = canvas.getContext('webgl', { antialias: false, depth: false, stencil: false, alpha: false, powerPreference: 'low-power' });
+    const S = window.NOVA_SHADERS; if (!gl || !S) return null;
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const progs = {};
+    const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+    function prog(id) {
+      if (progs[id]) return progs[id];
+      const pr = gl.createProgram();
+      gl.attachShader(pr, sh(gl.VERTEX_SHADER, 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}'));
+      gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, S.common + S.list[id])); gl.linkProgram(pr);
+      return (progs[id] = { pr, R: gl.getUniformLocation(pr, 'R'), T: gl.getUniformLocation(pr, 'T'), M: gl.getUniformLocation(pr, 'M'), p: gl.getAttribLocation(pr, 'p') });
+    }
+    return {
+      draw(id, w, h, t, mx, my) {
+        const P = prog(id); gl.useProgram(P.pr); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.enableVertexAttribArray(P.p); gl.vertexAttribPointer(P.p, 2, gl.FLOAT, false, 0, 0);
+        gl.viewport(0, 0, w, h); gl.uniform2f(P.R, w, h); gl.uniform1f(P.T, t); gl.uniform2f(P.M, mx, my);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      }
+    };
+  }
+  function mountLive(id, still) {
+    let cv = document.querySelector('.bg-gl');
+    if (!cv) { cv = document.createElement('canvas'); cv.className = 'bg-gl'; cv.setAttribute('aria-hidden', 'true'); document.body.prepend(cv); }
+    let run = cv._run;
+    if (!run) { try { run = cv._run = glRunner(cv); } catch (e) { run = null; } }
+    if (!run) return null;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let scale = Math.min(1, Math.sqrt(3.7e6 / Math.max(1, innerWidth * innerHeight * dpr * dpr)));
+    let raf = 0, alive = true, last = 0, t0 = performance.now() - 20000, avg = 16, good = 0;
+    const size = () => { cv.width = Math.max(8, Math.round(innerWidth * dpr * scale)); cv.height = Math.max(8, Math.round(innerHeight * dpr * scale)); };
+    const frame = (now) => { try { run.draw(id, cv.width, cv.height, (now - t0) / 1000, pointer.x, 1 - pointer.y); } catch (e) { console.error(e); alive = false; } };
+    size(); cv.style.display = 'block';
+    if (still) { frame(performance.now()); return { destroy() {} }; }
+    let prev = 0;
+    const loop = (now) => {
+      if (!alive) return;
+      raf = requestAnimationFrame(loop);
+      if (prev) { avg = avg * 0.9 + (now - prev) * 0.1; } prev = now;
+      if (document.hidden || now - last < 32) return;
+      last = now; frame(now);
+      if (avg > 26 && scale > 0.4) { scale = Math.max(0.4, scale * 0.85); size(); avg = 16; good = 0; }
+      else if (avg < 18 && scale < 1 && ++good > 90) { scale = Math.min(1, scale * 1.1); size(); good = 0; }
+    };
+    raf = requestAnimationFrame(loop);
+    const onResize = () => size(); window.addEventListener('resize', onResize);
+    return { destroy() { alive = false; cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); } };
+  }
   const PRESETS = {
-    smoke: videoPreset('Smoke', 'smoke'),
-    swirl: videoPreset('Star Swirl', 'swirl', { fit: 'contain' }),
-    blossoms: videoPreset('Blossoms', 'blossoms'),
-    'pink-moon': videoPreset('Pink Moon', 'pink-moon'),
-    'night-garden': videoPreset('Night Garden', 'night-garden'),
+    smoke: livePreset('Smoke', 'smoke'),
+    swirl: livePreset('Star Swirl', 'swirl'),
+    'pink-moon': livePreset('Pink Moon', 'pink-moon'),
+    'northern-lights': livePreset('Northern Lights', 'northern-lights'),
+    'nebula-drift': livePreset('Nebula Drift', 'nebula-drift'),
     galaxy: imagePreset('Galaxy', 'galaxy.jpg'),
     void: {
       name: 'Void', scale: 0.55,
@@ -2240,6 +2293,12 @@
       let id = settings.get('bg');
       if (!PRESETS[id] && id !== 'custom') id = 'smoke';
       const def = PRESETS[id];
+      const glc = document.querySelector('.bg-gl'); if (glc) glc.style.display = 'none';
+      if (def && def.gl) {
+        if (vid) { vid.pause(); vid.style.display = 'none'; }
+        const live = mountLive(def.gl, settings.reducedMotion());
+        if (live) { canvas.style.display = 'none'; img.style.display = 'none'; this._page = live; return; }
+      }
       if (def && def.video && !settings.reducedMotion()) {
         if (!vid) { vid = document.createElement('video'); vid.className = 'bg-video'; vid.muted = true; vid.loop = true; vid.autoplay = true; vid.playsInline = true; vid.setAttribute('playsinline', ''); vid.setAttribute('aria-hidden', 'true'); document.body.prepend(vid); }
         const src = WALL_DIR + def.video + (vid.canPlayType('video/webm; codecs="vp9"') ? '.webm' : '.mp4');
