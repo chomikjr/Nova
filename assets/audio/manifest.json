@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-04T04:09:20.299Z",
+  "generated": "2026-11-05T04:47:30.986Z",
   "stations": [
     {
       "id": "hip-hop",
@@ -9,7 +9,31 @@
       "hue": 280,
       "order": 1,
       "cover": null,
-      "tracks": []
+      "tracks": [
+        {
+          "file": "Hope.mp3",
+          "title": "Hope"
+        },
+        {
+          "file": "NUMB.mp3",
+          "title": "NUMB"
+        },
+        {
+          "file": "XXXTENTACION - I don’t let go (Audio).mp3",
+          "artist": "XXXTENTACION",
+          "title": "I don’t let go (Audio)"
+        },
+        {
+          "file": "XXXTENTACION - Look At Me! (Official Video).mp3",
+          "artist": "XXXTENTACION",
+          "title": "Look At Me! (Official Video)"
+        },
+        {
+          "file": "XXXTENTACION - MOONLIGHT (OFFICIAL MUSIC VIDEO).mp3",
+          "artist": "XXXTENTACION",
+          "title": "MOONLIGHT (OFFICIAL MUSIC VIDEO)"
+        }
+      ]
     },
     {
       "id": "lofi",
