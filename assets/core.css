@@ -158,6 +158,7 @@ p { margin: 0; }
 .chip[aria-pressed='true'] { background: var(--primary); border-color: transparent; color: #fff; box-shadow: 0 6px 20px -6px var(--primary-glow); }
 
 /* ---------- Forms ---------- */
+[hidden] { display: none !important; }
 .field { display: grid; gap: 6px; }
 .field label { font-size: 14px; font-weight: 600; color: var(--fg-dim); }
 .input, .select {
