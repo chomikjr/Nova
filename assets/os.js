@@ -812,7 +812,7 @@
       body.innerHTML = '<div class="app">' +
         '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><span class="avatar" style="width:76px;height:76px;font-size:32px;border-radius:22px;background:' + (u ? hueBg(u.hue) : 'var(--tile)') + '">' + (u ? esc(u.username[0].toUpperCase()) : icon('user').replace('<svg', '<svg width="34" height="34"')) + '</span>' +
         '<div style="flex:1;min-width:200px"><h2>' + (u ? esc(u.username) : 'Guest player') + '</h2><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' +
-        (u && A.auth.isOwner() ? '<span class="badge badge-pro">' + icon('crown') + 'Owner</span>' : '') + '<span class="badge">Level ' + lv.level + ', ' + lv.title + '</span>' +
+        (u && A.auth.isOwner() ? '<span class="badge badge-pro">' + icon('crown') + 'Owner</span>' : '') + (m.flags.adminTitle ? '<span class="badge badge-pro">' + icon('star') + esc(m.flags.adminTitle) + '</span>' : '') + '<span class="badge">Level ' + lv.level + ', ' + lv.title + '</span>' +
         '<span class="badge">' + icon(u && u.cloud ? 'cloud' : 'phone') + (u && u.cloud ? 'Synced to cloud' : 'Saved on this device') + '</span></div></div>' +
         (u ? '<button class="btn btn-sm pf-out">' + icon('logout') + 'Log out</button>' : '<div style="display:flex;gap:8px"><button class="btn btn-sm pf-in">Log in</button><button class="btn btn-primary btn-sm pf-up">' + icon('user') + 'Sign up</button></div>') + '</div>' +
         (u ? '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="os-label">Avatar color</span><div class="swatches">' + [0, 25, 45, 90, 150, 190, 220, 265, 290, 330].map((h) => '<button class="swatch pf-hue" data-hue="' + h + '" aria-label="Color ' + h + '" aria-pressed="' + (Math.abs(u.hue - h) < 3) + '" style="width:30px;height:30px;background:' + hueBg(h) + '"></button>').join('') + '</div></div>' : '') +
@@ -931,9 +931,11 @@
 
   /* ========================================================= APP: ADMIN */
   function renderAdmin(body) {
+    let liveOff = null;
     const paint = async () => {
       if (!A.auth.isOwner()) { body.innerHTML = '<div class="app"><p class="empty">Owner only.</p></div>'; return; }
-      body.innerHTML = '<div class="app"><div><h2>Admin</h2><p class="app-sub">Your site at a glance. Only your owner account can see this.</p></div><div class="ad-stats stat-grid"><div class="empty">Loading…</div></div><section style="display:grid;gap:10px"><div class="sec-title"><h4>Game requests</h4><button class="btn btn-sm btn-ghost ad-ref">' + icon('refresh') + 'Refresh</button></div><div class="ad-req"><div class="empty">Loading…</div></div></section><section style="display:grid;gap:10px"><div class="sec-title"><h4>Most played</h4></div><div class="ad-top"></div></section></div>';
+      body.innerHTML = '<div class="app"><div><h2>Admin</h2><p class="app-sub">Your site at a glance. Only your owner account can see this.</p></div><div class="ad-stats stat-grid"><div class="empty">Loading…</div></div><section style="display:grid;gap:10px"><div class="sec-title"><h4>Game requests</h4><button class="btn btn-sm btn-ghost ad-ref">' + icon('refresh') + 'Refresh</button></div><div class="ad-req"><div class="empty">Loading…</div></div></section><div class="ad-live"></div><section style="display:grid;gap:10px"><div class="sec-title"><h4>Most played</h4></div><div class="ad-top"></div></section></div>';
+      if (liveOff) liveOff(); liveOff = window.NovaLive ? window.NovaLive.mountPanel($('.ad-live', body)) : null;
       await A.ready; const c = A.cloud.client;
       if (!c) { $('.ad-stats', body).innerHTML = '<div class="empty">Cloud is offline.</div>'; return; }
       const [{ data: st }, { data: rq }, tr] = await Promise.all([c.rpc('site_stats'), c.from('game_requests').select('id,title,note,created_at').order('created_at', { ascending: false }).limit(100), A.scores.trending()]);
@@ -949,7 +951,8 @@
       if (e.target.closest('.ad-ref')) { A.store.remove('trendCache'); paint(); }
       const d = e.target.closest('.ad-del'); if (d) { const ids = d.dataset.ids.split(',').map(Number); const { error } = await A.cloud.client.from('game_requests').delete().in('id', ids); if (error) A.ui.toast('Couldn’t delete that.', 'info'); else { d.closest('.nf').remove(); A.ui.toast('Dismissed', 'check'); } }
     });
-    paint(); return onEv('auth', paint);
+    paint(); const offAuth = onEv('auth', paint);
+    return () => { offAuth(); if (liveOff) liveOff(); };
   }
 
   /* ---------------------------------------------------------------- BOOT */
@@ -986,5 +989,5 @@
   window.NovaInstall = async () => { if (!installEvt) return false; installEvt.prompt(); const r = await installEvt.userChoice; installEvt = null; return r.outcome === 'accepted'; };
   window.NovaCanInstall = () => !!installEvt;
 
-  window.NovaOS = { openGame, openApp, openPalette, wins };
+  window.NovaOS = { openGame, openApp, openPalette, wins, closeWindow, showLock, confetti };
 })();

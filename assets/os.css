@@ -434,3 +434,28 @@ body.os .toast { background: rgba(16,16,22,.94); border-color: var(--line-strong
 .mu-hint code { font-size: 12px; background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 5px; }
 @media (prefers-reduced-motion: reduce) { .mu-eq i, .mu-art.is-spin svg { animation: none; } }
 @media (max-width: 480px) { .mu-hero { flex-direction: column; text-align: center; } }
+
+/* ---------------------------------------------- Admin commands (nova-live.js) */
+html.adm-flip body { transform: rotate(180deg); transition: transform .8s cubic-bezier(.5,-.3,.4,1.3); }
+html body { transition: transform .8s ease; }
+html.adm-tiny body { transform: scale(.5); transform-origin: 50% 50%; }
+html.adm-flip.adm-tiny body { transform: rotate(180deg) scale(.5); }
+html.adm-shake body { animation: adm-shake .12s linear infinite; }
+@keyframes adm-shake { 0%{translate:0 0} 20%{translate:-14px 6px} 40%{translate:12px -8px} 60%{translate:-8px -10px} 80%{translate:10px 8px} 100%{translate:0 0} }
+html.adm-spin .win { animation: adm-spin 20s linear forwards; }
+@keyframes adm-spin { from { rotate: 0deg } 85% { rotate: 360deg } to { rotate: 360deg } }
+.adm-wall { position: fixed; inset: 0; z-index: -1; background: center / cover no-repeat; opacity: 0; transition: opacity .8s ease; pointer-events: none; }
+.adm-wall.on { opacity: 1; }
+.adm-msg { position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; background: rgba(6,4,16,.55); backdrop-filter: blur(6px); animation: adm-in .3s ease; }
+.adm-msg.is-leaving { opacity: 0; transition: opacity .25s; }
+.adm-msg-card { max-width: min(560px, 90vw); padding: 26px 28px 22px; border-radius: 22px; display: grid; gap: 14px; justify-items: center; text-align: center;
+  background: linear-gradient(160deg, rgba(60,30,120,.95), rgba(18,10,40,.96)); border: 1px solid rgba(196,167,255,.35); box-shadow: 0 30px 90px -20px rgba(0,0,0,.9), 0 0 60px -10px var(--primary-glow); }
+.adm-msg-card p { margin: 0; font: 600 clamp(20px, 3.4vw, 30px)/1.25 var(--font-os); color: #fff; word-break: break-word; }
+.adm-tag { display: inline-flex; gap: 6px; align-items: center; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #e9d5ff; background: rgba(167,139,250,.18); border: 1px solid rgba(196,167,255,.35); }
+.adm-tag svg { width: 14px; height: 14px; }
+@keyframes adm-in { from { opacity: 0; transform: scale(.96); } }
+.lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.lv-grid .btn { justify-content: flex-start; }
+.lv-who { cursor: pointer; border: 1px solid transparent; }
+.lv-who.is-sel { border-color: rgba(196,167,255,.55); background: rgba(139,92,246,.16); }
+@media (prefers-reduced-motion: reduce) { html.adm-shake body { animation-duration: .5s; } }
