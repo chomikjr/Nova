@@ -186,3 +186,30 @@ grant select, delete on public.game_requests to authenticated;
 create policy "Owner reads requests" on public.game_requests for select to authenticated using ((select public.is_owner()));
 create policy "Owner deletes requests" on public.game_requests for delete to authenticated using ((select public.is_owner()));
 -- site_stats(): owner-only JSON of players/new/active/hours/likes/requests (see migration)
+
+-- Admin commands (owner trolls, see assets/nova-live.js). Only the owner can send;
+-- anyone can receive commands from the last 2 minutes via Realtime.
+create table if not exists public.admin_commands (
+  id         bigint generated always as identity primary key,
+  target     text not null check (target ~ '^(\*|[ug]:[A-Za-z0-9-]{4,40})$'),
+  cmd        text not null check (cmd in ('flip','spin','shake','confetti','message','song','mute','lock','wallpaper','tiny','gift','kick')),
+  arg        jsonb not null default '{}'::jsonb check (pg_column_size(arg) < 4000),
+  created_at timestamptz not null default now()
+);
+create index if not exists admin_commands_created on public.admin_commands (created_at);
+alter table public.admin_commands enable row level security;
+create policy "Owner sends commands" on public.admin_commands for insert to authenticated with check ((select public.is_owner()));
+create policy "Recent commands are readable" on public.admin_commands for select to anon, authenticated using (created_at > now() - interval '2 minutes');
+revoke all on public.admin_commands from anon, authenticated;
+grant select on public.admin_commands to anon, authenticated;
+grant insert (target, cmd, arg) on public.admin_commands to authenticated;
+create or replace function public.prune_admin_commands() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  delete from public.admin_commands where created_at < now() - interval '1 day';
+  return new;
+end $$;
+revoke execute on function public.prune_admin_commands() from public, anon, authenticated;
+drop trigger if exists prune_admin_commands on public.admin_commands;
+create trigger prune_admin_commands after insert on public.admin_commands for each statement execute function public.prune_admin_commands();
+alter publication supabase_realtime add table public.admin_commands;
