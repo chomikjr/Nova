@@ -814,7 +814,7 @@
         '<div style="flex:1;min-width:200px"><h2>' + (u ? esc(u.username) : 'Guest player') + '</h2><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' +
         (u && A.auth.isOwner() ? '<span class="badge badge-pro">' + icon('crown') + 'Owner</span>' : '') + (m.flags.adminTitle ? '<span class="badge badge-pro">' + icon('star') + esc(m.flags.adminTitle) + '</span>' : '') + '<span class="badge">Level ' + lv.level + ', ' + lv.title + '</span>' +
         '<span class="badge">' + icon(u && u.cloud ? 'cloud' : 'phone') + (u && u.cloud ? 'Synced to cloud' : 'Saved on this device') + '</span></div></div>' +
-        (u ? '<button class="btn btn-sm pf-out">' + icon('logout') + 'Log out</button>' : '<div style="display:flex;gap:8px"><button class="btn btn-sm pf-in">Log in</button><button class="btn btn-primary btn-sm pf-up">' + icon('user') + 'Sign up</button></div>') + '</div>' +
+        (u ? '<div style="display:flex;gap:8px">' + (u.cloud ? '<button class="btn btn-sm pf-name">' + icon('user') + 'Rename</button>' : '') + '<button class="btn btn-sm pf-out">' + icon('logout') + 'Log out</button></div>' : '<div style="display:flex;gap:8px"><button class="btn btn-sm pf-in">Log in</button><button class="btn btn-primary btn-sm pf-up">' + icon('user') + 'Sign up</button></div>') + '</div>' +
         (u ? '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="os-label">Avatar color</span><div class="swatches">' + [0, 25, 45, 90, 150, 190, 220, 265, 290, 330].map((h) => '<button class="swatch pf-hue" data-hue="' + h + '" aria-label="Color ' + h + '" aria-pressed="' + (Math.abs(u.hue - h) < 3) + '" style="width:30px;height:30px;background:' + hueBg(h) + '"></button>').join('') + '</div></div>' : '') +
         (u ? '' : '<div class="side-guest" style="padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(244,63,94,.12));border:1px solid var(--line)">Your progress is saved on this device. Make a free account to keep your XP, achievements and saves on every device and join the global leaderboard.</div>') +
         '<div><div style="display:flex;justify-content:space-between;font-size:14px;color:var(--dim);margin-bottom:6px"><span>Level ' + lv.level + '</span><span>' + lv.cur.toLocaleString() + ' / ' + lv.need.toLocaleString() + ' XP</span></div><div class="bar"><i style="width:' + (lv.pct * 100) + '%"></i></div></div>' +
@@ -825,6 +825,7 @@
       fillCovers(body);
     };
     body.addEventListener('click', (e) => {
+      if (e.target.closest('.pf-name')) { A.ui.openUsernamePicker(false); return; }
       if (e.target.closest('.pf-out')) { A.auth.logOut(); A.ui.toast('Logged out.', 'logout'); }
       if (e.target.closest('.pf-in')) A.ui.openAuth('login');
       if (e.target.closest('.pf-up')) A.ui.openAuth('signup');

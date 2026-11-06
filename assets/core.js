@@ -982,6 +982,8 @@
     client: null, user: null, profile: null, _push: 0, _pulling: false,
     async init() {
       if (!this.enabled) return;
+      const h0 = location.search + location.hash, fromOAuth = /[?&#]code=|access_token=/.test(h0), oauthErr = h0.match(/error_description=([^&]+)/);
+      if (oauthErr) { setTimeout(() => toast('Google sign-in failed: ' + decodeURIComponent(oauthErr[1].replace(/\+/g, ' ')), 'bell'), 900); history.replaceState(null, '', location.pathname); }
       try {
         let mod = null;
         for (const src of ['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm', 'https://esm.sh/@supabase/supabase-js@2', 'https://unpkg.com/@supabase/supabase-js@2/dist/module/index.js?module']) {
@@ -995,9 +997,12 @@
       this.client.auth.onAuthStateChange((evt, session) => {
         if (evt === 'SIGNED_OUT') { this.user = null; this.profile = null; store.remove('cloudProfile'); emit('auth', null); }
         if (evt === 'PASSWORD_RECOVERY') setTimeout(() => openResetPassword(), 300);
+        if (evt === 'SIGNED_IN' && session && (!this.user || this.user.id !== session.user.id)) this._loadUser(session.user);
       });
       const { data } = await this.client.auth.getSession();
+      if (fromOAuth) history.replaceState(null, '', location.pathname);
       if (data.session) await this._loadUser(data.session.user);
+      if (fromOAuth && data.session) setTimeout(() => { toast('Signed in with Google' + (auth.isOwner() ? ' — owner mode on' : '') + '!', 'star'); if (auth.needsName()) openUsernamePicker(true); }, 600);
       else if (store.get('cloudProfile', null)) { store.remove('cloudProfile'); emit('auth', null); }
     },
     async _loadUser(user) {
@@ -1168,6 +1173,28 @@
         if (!s || !users[s.user]) return;
         users[s.user].hue = h; store.set('users', users);
       }
+      emit('auth', auth.current());
+    },
+    /* Google sign-in (Supabase OAuth). Checks the provider is on before leaving the page. */
+    async google() {
+      if (!cloud.enabled) throw new Error('Cloud accounts are off on this site.');
+      await ready;
+      let on = true;
+      try { const r = await fetch(config.cloud.supabaseUrl + '/auth/v1/settings', { headers: { apikey: config.cloud.supabaseAnonKey } }); if (r.ok) { const j = await r.json(); on = !!(j.external && j.external.google); } } catch (e) {}
+      if (!on) throw new Error('Google sign-in isn’t switched on yet.');
+      const { error } = await cloud.client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: 'select_account' } } });
+      if (error) throw new Error(friendlyAuthError(error));
+    },
+    /* Google accounts start as player_xxxxxxxx until they pick a name */
+    needsName() { const u = auth.current(); return !!(u && u.cloud && /^player_[0-9a-f]{8}$/.test(u.username)); },
+    async setUsername(name) {
+      name = String(name || '').trim();
+      const err = auth.validateUsername(name); if (err) throw new Error(err);
+      const u = auth.current(); if (!u || !cloud.user) throw new Error('Sign in first.');
+      if (name.toLowerCase() !== u.username.toLowerCase() && !(await auth.usernameAvailable(name))) throw new Error('That username is taken. Try another one.');
+      const { error } = await cloud.client.from('profiles').update({ username: name }).eq('id', cloud.user.id);
+      if (error) throw new Error(/reserved/i.test(error.message) ? 'That name is reserved.' : /duplicate|unique/i.test(error.message) ? 'That username is taken. Try another one.' : 'Couldn’t save your name. Try again.');
+      cloud.profile = Object.assign({}, cloud.profile, { username: name }); store.set('cloudProfile', cloud.profile);
       emit('auth', auth.current());
     },
     /* Everything is free now — kept so older code paths still work */
@@ -2371,6 +2398,7 @@
     const lockIco = icon('lock').replace('<svg', '<svg style="display:inline;width:13px;height:13px;vertical-align:-2px"');
     const m = modal(
       '<h2 id="auth-title">Welcome, player</h2><p class="modal-sub">' + (isCloud ? 'Your scores, settings and saves follow you to every device.' : 'Save high scores, stats and settings to your profile.') + '</p>' +
+      (isCloud ? '<button class="btn btn-block btn-lg au-google" type="button" style="gap:10px;background:#fff;color:#1f1f1f;border-color:#fff"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.3h6a5.1 5.1 0 0 1-2.2 3.3v2.8h3.6c2.1-1.9 3.2-4.8 3.2-8.2z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.4-2.7l-3.6-2.8c-1 .7-2.3 1.1-3.8 1.1-2.9 0-5.4-2-6.3-4.6H2v2.9A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.7 14a6.6 6.6 0 0 1 0-4.2V6.9H2a11 11 0 0 0 0 9.9z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2 6.9l3.7 2.9C6.6 7.3 9.1 5.4 12 5.4z"/></svg>Continue with Google</button><div style="display:flex;align-items:center;gap:10px;color:var(--fg-dim);font-size:13px;margin:14px 0"><span style="flex:1;height:1px;background:var(--line)"></span>or use email<span style="flex:1;height:1px;background:var(--line)"></span></div>' : '') +
       '<div class="tabs" role="tablist"><button class="tab" role="tab" data-mode="login">Log in</button><button class="tab" role="tab" data-mode="signup">Create account</button></div>' +
       '<form novalidate class="auth-form" style="display:grid;gap:14px">' +
       '<div class="field au-uname"><label for="au-user">Username</label><input class="input" id="au-user" autocomplete="username" maxlength="18" spellcheck="false"><div class="field-hint au-uhint">Shown on leaderboards. Letters, numbers, underscores.</div><div class="field-error" id="au-user-err"></div></div>' +
@@ -2443,6 +2471,26 @@
       }
     });
     q('.au-guest').addEventListener('click', () => { audio.sfx('click'); m.close(); });
+    const gb = q('.au-google');
+    if (gb) gb.addEventListener('click', async () => {
+      audio.sfx('click'); gb.disabled = true; q('.au-form-err').textContent = '';
+      try { await auth.google(); } catch (err) { q('.au-form-err').textContent = err.message; gb.disabled = false; }
+    });
+  }
+
+  /* Pick or change your username (Google sign-ups start as player_xxxxxxxx) */
+  function openUsernamePicker(firstTime) {
+    const u = auth.current(); if (!u) return;
+    const m = modal('<h2>' + (firstTime ? 'Pick your username' : 'Change username') + '</h2><p class="modal-sub">' + (firstTime ? 'This is what shows on leaderboards. Don’t use your real full name.' : 'Shown on leaderboards.') + '</p>' +
+      '<form novalidate style="display:grid;gap:14px"><div class="field"><label for="un-1">Username</label><input class="input" id="un-1" maxlength="18" spellcheck="false" autocomplete="username" value="' + (firstTime ? '' : esc(u.username)) + '" placeholder="3–18 letters, numbers or _"><div class="field-error un-err" role="alert"></div></div>' +
+      '<button class="btn btn-primary btn-lg btn-block" type="submit">Save</button>' + (firstTime ? '<button class="btn btn-ghost btn-block un-later" type="button">Later</button>' : '') + '</form>', { label: 'Username' });
+    setTimeout(() => m.el.querySelector('#un-1').focus(), 40);
+    m.el.querySelector('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try { await auth.setUsername(m.el.querySelector('#un-1').value); audio.sfx('levelup'); m.close(); toast('Nice to meet you, ' + auth.current().username + '!', 'star'); }
+      catch (err) { audio.sfx('error'); m.el.querySelector('.un-err').textContent = err.message; }
+    });
+    const later = m.el.querySelector('.un-later'); if (later) later.addEventListener('click', () => m.close());
   }
 
   /* After clicking a password-reset email link */
@@ -2595,7 +2643,7 @@
 
   window.Arcade = {
     config, games, store, auth, scores, settings, audio, bg, icon, esc, on, emit, cloud, ready, meta, notify, embed: EMBED, today,
-    ui: { toast, modal, openAuth, openResetPassword, openUpgrade, openProfile, openSettings, bindMusicButton, el, fmtTime },
+    ui: { toast, modal, openAuth, openUsernamePicker, openResetPassword, openUpgrade, openProfile, openSettings, bindMusicButton, el, fmtTime },
     url: (p) => ROOT + p
   };
 })();
