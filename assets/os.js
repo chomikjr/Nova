@@ -186,6 +186,12 @@
   function openGame(id) {
     const g = byId(id); if (!g) return;
     closeStart(); closePalette();
+    if (g.external) {
+      const w = window.open(g.external, '_blank', 'noopener');
+      A.meta.played(id);
+      A.ui.toast(w === null ? 'Allow pop-ups to open ' + g.title : g.title + ' opened in a new tab', 'external');
+      return;
+    }
     const url = g.path + (g.path.indexOf('?') >= 0 ? '&' : '?') + 'embed=1';
     return openWindow('game:' + id, {
       title: g.title, iconHtml: gameIco(g), game: g, w: Math.min(1140, innerWidth * 0.82), h: Math.min(780, innerHeight * 0.8),

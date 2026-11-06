@@ -55,6 +55,10 @@
   const port = (o) => Object.assign({ status: 'live', path: 'games/play.html?g=' + o.id, dir: o.id, entry: 'index.html' }, o);
   const games = [
     // ----- Popular -----
+    { id: 'horizon', title: 'Horizon (Minecraft)', status: 'live', popular: true, tags: ['Sandbox', 'Adventure'], hue: 110, thumb: 'void',
+      external: 'https://rust-minecraft.b-cdn.net/', path: 'https://rust-minecraft.b-cdn.net/',
+      tagline: 'Minecraft Java rebuilt in Rust, running in your browser. Opens in a new tab.', author: 'Horizon project (horizon-rust)', license: 'MIT (engine)', repo: 'horizon-rust/horizon',
+      controls: 'WASD · mouse · needs Chrome or Edge (WebGPU)' },
     port({ id: '2048', title: '2048', popular: true, tags: ['Puzzle'], hue: 35, image: '2048',
       tagline: 'Slide, merge, and chase the 2048 tile.', author: 'Gabriele Cirulli', license: 'MIT', repo: 'gabrielecirulli/2048', controls: 'Arrow keys / swipe' }),
     port({ id: 'antimatter', title: 'Antimatter Dimensions', popular: true, tags: ['Idle'], hue: 100, image: 'antimatter',
