@@ -2409,6 +2409,7 @@
       '<button class="btn btn-primary btn-lg btn-block au-submit" type="submit">Log in</button>' +
       '<button class="btn btn-ghost btn-block au-guest" type="button">Keep playing as guest</button>' +
       '<p class="field-hint" style="text-align:center">' + lockIco + (isCloud ? ' Secured cloud account. We never see your password.' : ' Accounts are stored on this device. Passwords are hashed.') + '</p>' +
+      (isCloud ? '<p class="field-hint" style="text-align:center;margin-top:-6px"><a href="privacy.html" target="_blank" rel="noopener">Privacy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms</a></p>' : '') +
       '</form>', { label: 'Log in or create account' });
     const box = m.el, form = box.querySelector('form');
     const q = (sel) => box.querySelector(sel);

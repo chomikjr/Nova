@@ -893,7 +893,7 @@
       '<section style="display:grid;gap:8px"><div class="os-label">Game credits</div><p class="field-hint">These games are open source. Each is hosted under its creator’s license, with trackers and ads removed.</p>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="text-align:left;color:var(--faint)"><th style="padding:8px">Game</th><th style="padding:8px">Creator</th><th style="padding:8px">License</th></tr></thead><tbody>' +
       ports.map((g) => '<tr style="border-top:1px solid var(--line)"><td style="padding:8px"><a href="https://github.com/' + esc(g.repo) + '" target="_blank" rel="noopener">' + esc(g.title) + '</a></td><td style="padding:8px;color:var(--dim)">' + esc(g.author) + '</td><td style="padding:8px"><span class="badge">' + esc(g.license) + '</span></td></tr>').join('') +
-      '</tbody></table></div></section></div>';
+      '</tbody></table></div></section><p class="field-hint"><a href="privacy.html" target="_blank" rel="noopener">Privacy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms</a></p></div>';
   }
 
   /* ------------------------------------------------------------ CONFETTI */
