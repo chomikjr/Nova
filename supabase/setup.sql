@@ -213,3 +213,10 @@ revoke execute on function public.prune_admin_commands() from public, anon, auth
 drop trigger if exists prune_admin_commands on public.admin_commands;
 create trigger prune_admin_commands after insert on public.admin_commands for each statement execute function public.prune_admin_commands();
 alter publication supabase_realtime add table public.admin_commands;
+
+
+-- ---------------------------------------------------------------------------
+-- Google sign-in (migration google_signin_usernames)
+-- OAuth sign-ups get player_xxxxxxxx (never the email) and pick a name later;
+-- only the owner can take the name "Ryan" (on sign-up or rename).
+-- See the live functions handle_new_user() and protect_profile_fields().
