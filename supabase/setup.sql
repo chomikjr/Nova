@@ -220,3 +220,20 @@ alter publication supabase_realtime add table public.admin_commands;
 -- OAuth sign-ups get player_xxxxxxxx (never the email) and pick a name later;
 -- only the owner can take the name "Ryan" (on sign-up or rename).
 -- See the live functions handle_new_user() and protect_profile_fields().
+
+-- Problem reports from the "Report a problem" button in game windows (migration game_reports)
+create table if not exists public.game_reports (
+  id bigint generated always as identity primary key,
+  game_id text not null check (char_length(game_id) between 1 and 80),
+  reason text not null check (reason in ('wont_load','crashes','controls','sound','display','other')),
+  note text check (note is null or char_length(note) <= 300),
+  user_id uuid default auth.uid() references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+alter table public.game_reports enable row level security;
+create policy "anyone can report" on public.game_reports for insert to anon, authenticated with check (user_id is null or user_id = (select auth.uid()));
+create policy "owner reads reports" on public.game_reports for select to authenticated using ((select public.is_owner()));
+create policy "owner clears reports" on public.game_reports for delete to authenticated using ((select public.is_owner()));
+revoke all on public.game_reports from anon, authenticated;
+grant insert (game_id, reason, note) on public.game_reports to anon, authenticated;
+grant select, delete on public.game_reports to authenticated;

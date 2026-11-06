@@ -197,6 +197,7 @@
         } },
         { icon: 'refresh', label: 'Restart', onClick: (b, w) => { if (w.frame) { w.frame.src = 'about:blank'; setTimeout(() => (w.frame.src = url), 60); } } },
         { icon: 'info', label: 'About this game', onClick: () => gameInfo(g) },
+        { icon: 'flag', label: 'Report a problem', onClick: () => reportGame(g) },
         { icon: 'maximize', label: 'Fullscreen', onClick: (b, w) => { const f = w.frame; if (f && f.requestFullscreen) f.requestFullscreen().catch(() => {}); } }
       ],
       render(body, win) {
@@ -776,7 +777,8 @@
       body.innerHTML = '<div class="app"><div><h2>Achievements</h2><p class="app-sub">Unlock them all to become a Nova legend.</p></div>' +
         '<div class="stat-grid"><div class="stat"><span>Unlocked</span><b>' + done + ' / ' + list.length + '</b></div><div class="stat"><span>Level</span><b>' + lv.level + '</b></div><div class="stat"><span>Total XP</span><b>' + m.xp.toLocaleString() + '</b></div><div class="stat"><span>Dailies done</span><b>' + m.dailiesDone + '</b></div></div>' +
         '<div class="ach-grid">' + list.map((a) => { const p = A.meta.progress(a, m); const val = a.fmt === 'time' ? A.ui.fmtTime(p.value) + ' / ' + A.ui.fmtTime(p.goal) : p.value + ' / ' + p.goal;
-          return '<div class="ach' + (p.done ? ' done' : '') + '"><span class="ai">' + icon(p.done ? a.icon : 'lock') + '</span><span style="flex:1;min-width:0"><b>' + esc(a.title) + '</b><small>' + esc(a.desc) + '</small>' + (p.done ? '<span class="xp">Unlocked ' + new Date(m.ach[a.id]).toLocaleDateString() + ', +' + a.xp + ' XP</span>' : '<div class="bar gold"><i style="width:' + (p.value / p.goal * 100) + '%"></i></div><span class="xp">' + (p.goal > 1 ? val + ', ' : '') + '+' + a.xp + ' XP</span>') + '</span></div>'; }).join('') + '</div></div>';
+          const hide = a.secret && !p.done;
+          return '<div class="ach' + (p.done ? ' done' : '') + '"><span class="ai">' + icon(p.done ? a.icon : 'lock') + '</span><span style="flex:1;min-width:0"><b>' + esc(hide ? '???' : a.title) + '</b><small>' + esc(hide ? 'Secret — it’s hidden somewhere in Nova' : a.desc) + '</small>' + (p.done ? '<span class="xp">Unlocked ' + new Date(m.ach[a.id]).toLocaleDateString() + ', +' + a.xp + ' XP</span>' : '<div class="bar gold"><i style="width:' + (p.value / p.goal * 100) + '%"></i></div><span class="xp">' + (p.goal > 1 ? val + ', ' : '') + '+' + a.xp + ' XP</span>') + '</span></div>'; }).join('') + '</div></div>';
     };
     paint(); return onEv('meta', paint);
   }
@@ -935,10 +937,18 @@
     let liveOff = null;
     const paint = async () => {
       if (!A.auth.isOwner()) { body.innerHTML = '<div class="app"><p class="empty">Owner only.</p></div>'; return; }
-      body.innerHTML = '<div class="app"><div><h2>Admin</h2><p class="app-sub">Your site at a glance. Only your owner account can see this.</p></div><div class="ad-stats stat-grid"><div class="empty">Loading…</div></div><section style="display:grid;gap:10px"><div class="sec-title"><h4>Game requests</h4><button class="btn btn-sm btn-ghost ad-ref">' + icon('refresh') + 'Refresh</button></div><div class="ad-req"><div class="empty">Loading…</div></div></section><div class="ad-live"></div><section style="display:grid;gap:10px"><div class="sec-title"><h4>Most played</h4></div><div class="ad-top"></div></section></div>';
+      body.innerHTML = '<div class="app"><div><h2>Admin</h2><p class="app-sub">Your site at a glance. Only your owner account can see this.</p></div><div class="ad-stats stat-grid"><div class="empty">Loading…</div></div><section style="display:grid;gap:10px"><div class="sec-title"><h4>Game requests</h4><button class="btn btn-sm btn-ghost ad-ref">' + icon('refresh') + 'Refresh</button></div><div class="ad-req"><div class="empty">Loading…</div></div></section><section style="display:grid;gap:10px"><h4 style="margin:0">Problem reports</h4><div class="ad-rep"><div class="empty">Loading…</div></div></section><div class="ad-live"></div><section style="display:grid;gap:10px"><div class="sec-title"><h4>Most played</h4></div><div class="ad-top"></div></section></div>';
       if (liveOff) liveOff(); liveOff = window.NovaLive ? window.NovaLive.mountPanel($('.ad-live', body)) : null;
       await A.ready; const c = A.cloud.client;
       if (!c) { $('.ad-stats', body).innerHTML = '<div class="empty">Cloud is offline.</div>'; return; }
+      c.from('game_reports').select('id,game_id,reason,note,created_at').order('created_at', { ascending: false }).limit(200).then(({ data: rp, error }) => {
+        const box = $('.ad-rep', body); if (!box) return;
+        if (error) { box.innerHTML = '<div class="empty">Couldn’t load reports.</div>'; return; }
+        const by = {}; (rp || []).forEach((r) => { (by[r.game_id] = by[r.game_id] || { id: r.game_id, n: 0, reasons: {}, notes: [], ids: [], last: r.created_at }).n++; by[r.game_id].ids.push(r.id); by[r.game_id].reasons[r.reason] = (by[r.game_id].reasons[r.reason] || 0) + 1; if (r.note) by[r.game_id].notes.push(r.note); });
+        const list = Object.values(by).sort((a, b) => b.n - a.n);
+        const rl = Object.fromEntries(REPORT_REASONS);
+        box.innerHTML = list.length ? '<div style="display:grid;gap:8px">' + list.map((x) => { const gm = byId(x.id); return '<div class="nf" style="align-items:flex-start"><span class="pill hot" style="flex:none">' + x.n + '×</span><span style="flex:1;min-width:0"><b>' + esc(gm ? gm.title : x.id) + '</b><small style="display:block;color:var(--fg-dim)">' + Object.entries(x.reasons).map(([k, n]) => esc(rl[k] || k) + (n > 1 ? ' ×' + n : '')).join(' · ') + '</small>' + x.notes.slice(0, 3).map((n) => '<small style="display:block;color:var(--faint)">“' + esc(n) + '”</small>').join('') + '</span>' + (gm ? '<button class="btn btn-sm btn-ghost ad-open" data-id="' + esc(x.id) + '">Open</button>' : '') + '<button class="btn btn-sm btn-ghost ad-fix" data-ids="' + x.ids.join(',') + '">Fixed</button></div>'; }).join('') + '</div>' : '<div class="empty">No problem reports. 🎉</div>';
+      });
       const [{ data: st }, { data: rq }, tr] = await Promise.all([c.rpc('site_stats'), c.from('game_requests').select('id,title,note,created_at').order('created_at', { ascending: false }).limit(100), A.scores.trending()]);
       const S = st || {};
       $('.ad-stats', body).innerHTML = [['Players', S.players], ['New this week', S.new_7d], ['Active this week', S.active_7d], ['Hours played', S.hours], ['Likes', S.likes], ['Requests', S.requests]].map(([k, v]) => '<div class="stat"><span>' + k + '</span><b>' + (v == null ? '—' : Number(v).toLocaleString()) + '</b></div>').join('');
@@ -950,10 +960,34 @@
     };
     body.addEventListener('click', async (e) => {
       if (e.target.closest('.ad-ref')) { A.store.remove('trendCache'); paint(); }
+      const op = e.target.closest('.ad-open'); if (op) { openGame(op.dataset.id); return; }
+      const fx = e.target.closest('.ad-fix'); if (fx) { const ids = fx.dataset.ids.split(',').map(Number); const { error } = await A.cloud.client.from('game_reports').delete().in('id', ids); if (error) A.ui.toast('Couldn’t clear that.', 'info'); else { A.ui.toast('Marked fixed', 'check'); paint(); } return; }
       const d = e.target.closest('.ad-del'); if (d) { const ids = d.dataset.ids.split(',').map(Number); const { error } = await A.cloud.client.from('game_requests').delete().in('id', ids); if (error) A.ui.toast('Couldn’t delete that.', 'info'); else { d.closest('.nf').remove(); A.ui.toast('Dismissed', 'check'); } }
     });
     paint(); const offAuth = onEv('auth', paint);
     return () => { offAuth(); if (liveOff) liveOff(); };
+  }
+
+  /* ------------------------------------------------------------ REPORT A BROKEN GAME */
+  const REPORT_REASONS = [['wont_load', 'Won’t load / black screen'], ['crashes', 'Crashes or freezes'], ['controls', 'Controls don’t work'], ['sound', 'Sound problems'], ['display', 'Looks wrong / wrong size'], ['other', 'Something else']];
+  function reportGame(g) {
+    const key = 'reported.' + g.id, last = A.store.get(key, 0);
+    if (Date.now() - last < 6 * 36e5) { A.ui.toast('Thanks — you already reported ' + g.title + ' recently.', 'check'); return; }
+    const m = A.ui.modal('<h2>Report a problem</h2><p class="modal-sub">Something wrong with <b>' + esc(g.title) + '</b>? Tell us and we’ll take a look.</p>' +
+      '<form novalidate style="display:grid;gap:12px"><div style="display:grid;gap:8px">' + REPORT_REASONS.map(([v, l], i) => '<label class="nf" style="cursor:pointer;align-items:center"><input type="radio" name="r" value="' + v + '"' + (i === 0 ? ' checked' : '') + '> ' + l + '</label>').join('') + '</div>' +
+      '<div class="field"><label for="rp-note">Details (optional)</label><textarea class="input" id="rp-note" maxlength="300" rows="3" placeholder="What happened? Which level, browser, device…"></textarea></div>' +
+      '<div class="field-error rp-err" role="alert"></div><button class="btn btn-primary btn-lg btn-block" type="submit">' + icon('flag') + 'Send report</button></form>', { label: 'Report a problem' });
+    m.el.querySelector('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const reason = (m.el.querySelector('input[name=r]:checked') || {}).value || 'other', note = m.el.querySelector('#rp-note').value.trim().slice(0, 300) || null;
+      const btn = m.el.querySelector('button[type=submit]'); btn.disabled = true;
+      try {
+        await A.ready; const c = A.cloud.client; if (!c) throw new Error('offline');
+        const { error } = await c.from('game_reports').insert({ game_id: g.id, reason, note });
+        if (error) throw error;
+        A.store.set(key, Date.now()); m.close(); A.audio.sfx('coin'); A.ui.toast('Report sent — thank you!', 'check');
+      } catch (err) { btn.disabled = false; m.el.querySelector('.rp-err').textContent = 'Couldn’t send right now. Check your connection and try again.'; }
+    });
   }
 
   /* ---------------------------------------------------------------- BOOT */

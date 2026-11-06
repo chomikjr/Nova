@@ -42,7 +42,7 @@
   /* ------------------------------------------------------------ 1. 67 */
   function sixSeven() {
     if (busy) return; busy = true;
-    try { A.meta && A.meta.flag && A.meta.flag('egg67'); } catch (e) {}
+    try { A.meta.flag('egg67'); } catch (e) {}
     const layer = document.createElement('div'); layer.className = 'egg-layer'; document.body.appendChild(layer);
     const cols = ['#a78bfa', '#f472b6', '#facc15', '#34d399', '#60a5fa', '#fb923c', '#ffffff'];
     const n = reduced() ? 12 : Math.min(90, Math.round(innerWidth * innerHeight / 14000));
@@ -66,6 +66,7 @@
     if (busy || document.documentElement.classList.contains('egg-retro')) return; busy = true;
     if (!document.getElementById('egg-font')) { const l = document.createElement('link'); l.id = 'egg-font'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'; document.head.appendChild(l); }
     document.documentElement.classList.add('egg-retro');
+    try { A.meta.flag('eggKonami'); } catch (e) {}
     const tag = document.createElement('div'); tag.className = 'egg-retro-tag'; tag.innerHTML = '1UP x30<br>RETRO MODE'; document.body.appendChild(tag);
     /* classic power-up fanfare */
     [[523, 0], [659, .1], [784, .2], [1047, .3], [784, .45], [1047, .55], [1319, .7]].forEach(([f, t]) => setTimeout(() => beep({ type: 'square', freq: f, dur: 0.12, vol: 0.07 }), t * 1000));
@@ -85,6 +86,7 @@
     const els = Array.from(document.querySelectorAll('#os-home .wg, #os-home .os-day, #os-home .os-date, #os-home [data-wg], .dock > *, .win:not(.min)'))
       .filter((e, i, arr) => e.offsetParent && !arr.some((o) => o !== e && o.contains(e)));
     if (!els.length) { busy = false; return; }
+    try { A.meta.flag('eggGravity'); } catch (e) {}
     beep({ type: 'sine', freq: 600, to: 80, slide: 0.9, dur: 0.9, vol: 0.12 });
     A.ui.toast('Uh oh… gravity got turned on', 'zap');
     if (reduced()) { setTimeout(() => { busy = false; }, 500); return; }

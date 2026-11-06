@@ -938,6 +938,7 @@
     fullscreen: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
     nova: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>',
     bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    flag: '<path d="M4 22V4"/><path d="M4 4h12l-2 4 2 4H4"/>',
     trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
     info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
     chart: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
@@ -1353,7 +1354,11 @@
     { id: 'likes-5', title: 'Critic', desc: 'Like 5 games', xp: 60, icon: 'thumbsUp', goal: 5, prog: (m) => m.likesGiven || 0 },
     { id: 'favs-10', title: 'Collector', desc: 'Favorite 10 games', xp: 120, icon: 'heart', goal: 10, prog: (m) => m.favs.length },
     { id: 'home-custom', title: 'Interior Designer', desc: 'Customize your home screen', xp: 30, icon: 'settings', test: (m) => !!m.flags.widgets },
-    { id: 'try-30', title: 'Arcade Royalty', desc: 'Try 30 different games', xp: 400, icon: 'crown', goal: 30, prog: (m) => Object.keys(m.tried).length }
+    { id: 'try-30', title: 'Arcade Royalty', desc: 'Try 30 different games', xp: 400, icon: 'crown', goal: 30, prog: (m) => Object.keys(m.tried).length },
+    /* secret: shown as ??? until found (see assets/eggs.js) */
+    { id: 'egg-67', title: 'Six Seven', desc: 'Typed 67 on the desktop', xp: 67, icon: 'sparkles', secret: true, test: (m) => !!m.flags.egg67 },
+    { id: 'egg-konami', title: 'Up Up Down Down', desc: 'Entered the Konami code', xp: 100, icon: 'zap', secret: true, test: (m) => !!m.flags.eggKonami },
+    { id: 'egg-gravity', title: 'What Goes Up', desc: 'Turned on gravity', xp: 50, icon: 'trophy', secret: true, test: (m) => !!m.flags.eggGravity }
   ];
   const DAILY_TYPES = [
     { id: 'play3', text: 'Play 3 different games', goal: 3, kind: 'distinct' },
