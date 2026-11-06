@@ -545,6 +545,8 @@
       tagline: 'Floor it and chase the fastest time.', author: 'Various', license: 'See source', repo: 'chomikjr/Nova', controls: 'Arrows / WASD' }),
     port({ id: 'mineblocks', title: 'Mine Blocks', tags: ['Sandbox'], hue: 176, image: 'mineblocks', dir: '../mineblocks',
       tagline: 'Build, break and experiment however you like.', author: 'Various', license: 'See source', repo: 'chomikjr/Nova', controls: 'Mouse / keyboard' }),
+     port({ id: 'minecraft-26.3', title: 'Minecraft 26.3', tags: ['Sandbox'], hue: 351, image: 'splash', dir: '../minecraft-26.3',
+      tagline: 'Build, break and experiment however you like.', author: 'Various', license: 'See source', repo: 'chomikjr/Nova', controls: 'Mouse / keyboard' }),
     port({ id: 'minecraft-1.12.2', title: 'Minecraft 1.12.2 (Eaglercraft)', tags: ['Sandbox'], hue: 91, image: 'minecraft-1.12.2', dir: '../minecraft-1.12.2',
       tagline: 'Build, break and experiment however you like.', author: 'Various', license: 'See source', repo: 'chomikjr/Nova', controls: 'Mouse / keyboard' }),
     port({ id: 'minecraft-1.5.2', title: 'Minecraft 1.5.2', tags: ['Sandbox'], hue: 119, image: 'minecraft-1.5.2', dir: '../minecraft-1.5.2',
