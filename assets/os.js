@@ -208,7 +208,7 @@
       ],
       render(body, win) {
         body.classList.add('is-frame');
-        body.innerHTML = '<div class="win-loading"><div style="display:grid;justify-items:center;gap:14px">' + gameIco(g, 'wg-ico') + '<div class="spin"></div></div></div><iframe title="' + esc(g.title) + '" allow="fullscreen; autoplay; gamepad; clipboard-write"></iframe>';
+        body.innerHTML = '<div class="win-loading"><div style="display:grid;justify-items:center;gap:14px">' + gameIco(g, 'wg-ico') + '<div class="spin"></div></div></div><iframe title="' + esc(g.title) + '" allow="cross-origin-isolated; fullscreen; autoplay; gamepad; clipboard-write""></iframe>';
         const f = $('iframe', body); win.frame = f;
         f.addEventListener('load', () => {
           $('.win-loading', body).classList.add('is-done'); try { f.contentWindow.focus(); } catch (e) {}
