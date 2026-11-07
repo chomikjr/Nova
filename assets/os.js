@@ -210,9 +210,6 @@
         body.classList.add('is-frame');
         body.innerHTML = '<div class="win-loading"><div style="display:grid;justify-items:center;gap:14px">' + gameIco(g, 'wg-ico') + '<div class="spin"></div></div></div><iframe title="' + esc(g.title) + '" allow="cross-origin-isolated; fullscreen; autoplay; gamepad; clipboard-write"></iframe>';
         const f = $('iframe', body); win.frame = f;
-        // Games served from another site: an anonymous (credentialless) frame lets Chrome show them
-        // under Nova's cross-origin isolation without that site sending COEP headers.
-        if (g.anon) f.setAttribute('credentialless', '');
         f.addEventListener('load', () => {
           $('.win-loading', body).classList.add('is-done'); try { f.contentWindow.focus(); } catch (e) {}
           if (g.controls && !body.querySelector('.ctl-hint') && f.src.indexOf('about:') !== 0) {
