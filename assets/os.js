@@ -184,7 +184,8 @@
     return openWindow('app:' + id, { title: a.title, iconHtml: appIco(id), w: a.w, h: a.h, render: a.render, app: id });
   }
   function openGame(id) {
-    const g = byId(id); if (!g) return;
+    const g = byId(id);
+    if (!g) { const off = A.games.find((x) => x.id === id && x.status === 'broken'); if (off) A.ui.toast(off.title + ' is temporarily unavailable while we fix it.', 'info'); return; }
     closeStart(); closePalette();
     if (g.external) {
       const w = window.open(g.external, '_blank', 'noopener');
@@ -943,10 +944,11 @@
     let liveOff = null;
     const paint = async () => {
       if (!A.auth.isOwner()) { body.innerHTML = '<div class="app"><p class="empty">Owner only.</p></div>'; return; }
-      body.innerHTML = '<div class="app"><div><h2>Admin</h2><p class="app-sub">Your site at a glance. Only your owner account can see this.</p></div><div class="ad-stats stat-grid"><div class="empty">Loading…</div></div><section style="display:grid;gap:10px"><div class="sec-title"><h4>Game requests</h4><button class="btn btn-sm btn-ghost ad-ref">' + icon('refresh') + 'Refresh</button></div><div class="ad-req"><div class="empty">Loading…</div></div></section><section style="display:grid;gap:10px"><h4 style="margin:0">Problem reports</h4><div class="ad-rep"><div class="empty">Loading…</div></div></section><div class="ad-live"></div><section style="display:grid;gap:10px"><div class="sec-title"><h4>Most played</h4></div><div class="ad-top"></div></section></div>';
+      body.innerHTML = '<div class="app"><div><h2>Admin</h2><p class="app-sub">Your site at a glance. Only your owner account can see this.</p></div><div class="ad-stats stat-grid"><div class="empty">Loading…</div></div><section class="ad-site" style="display:grid;gap:10px"><h4 style="margin:0">Site controls</h4><div class="nf" style="align-items:center"><span style="flex:1"><b>Lockdown mode</b><small style="display:block;color:var(--fg-dim)">Shows visitors a “Nova has shut down, moved to orbit.delsea.one” page. You (signed in as owner) and anyone who enters the code still get in.</small></span><button class="btn btn-sm ad-lockbtn" disabled>Loading…</button></div><div class="nf" style="align-items:center;gap:8px;flex-wrap:wrap"><b style="flex:1;min-width:140px">Turn a broken game off</b><input class="input ad-offin" list="ad-games" placeholder="Game name" style="flex:2;min-width:160px"><datalist id="ad-games"></datalist><button class="btn btn-sm ad-offbtn">' + icon('flag') + 'Turn off</button></div><div class="ad-offlist"></div></section><section style="display:grid;gap:10px"><div class="sec-title"><h4>Game requests</h4><button class="btn btn-sm btn-ghost ad-ref">' + icon('refresh') + 'Refresh</button></div><div class="ad-req"><div class="empty">Loading…</div></div></section><section style="display:grid;gap:10px"><h4 style="margin:0">Problem reports</h4><div class="ad-rep"><div class="empty">Loading…</div></div></section><div class="ad-live"></div><section style="display:grid;gap:10px"><div class="sec-title"><h4>Most played</h4></div><div class="ad-top"></div></section></div>';
       if (liveOff) liveOff(); liveOff = window.NovaLive ? window.NovaLive.mountPanel($('.ad-live', body)) : null;
       await A.ready; const c = A.cloud.client;
       if (!c) { $('.ad-stats', body).innerHTML = '<div class="empty">Cloud is offline.</div>'; return; }
+      paintSite();
       c.from('game_reports').select('id,game_id,reason,note,created_at').order('created_at', { ascending: false }).limit(200).then(({ data: rp, error }) => {
         const box = $('.ad-rep', body); if (!box) return;
         if (error) { box.innerHTML = '<div class="empty">Couldn’t load reports.</div>'; return; }
@@ -964,8 +966,29 @@
       const top = LIVE.filter((x) => tr[x.id]).sort((a, b) => (tr[b.id].secs || 0) - (tr[a.id].secs || 0)).slice(0, 10);
       $('.ad-top', body).innerHTML = top.length ? '<div class="start-list">' + top.map((x) => '<div class="sl">' + gameIco(x) + '<span style="flex:1"><b>' + esc(x.title) + '</b><small>' + tr[x.id].players + ' players, ' + Math.round((tr[x.id].secs || 0) / 360) / 10 + ' h, ' + (tr[x.id].likes || 0) + ' likes</small></span></div>').join('') + '</div>' : '<div class="empty">No play data yet.</div>';
     };
+    const paintSite = async () => {
+      const b = $('.ad-lockbtn', body); if (!b || !A.flags) return;
+      const st = await A.flags.refresh(); const on = !!(st && st.lockdown);
+      b.disabled = !st; b.dataset.on = on ? '1' : '';
+      b.className = 'btn btn-sm ad-lockbtn ' + (on ? 'btn-primary' : 'btn-ghost'); b.textContent = !st ? 'Unavailable' : on ? 'On · turn off' : 'Off · turn on';
+      $('#ad-games', body).innerHTML = A.games.filter((g) => g.status === 'live').map((g) => '<option value="' + esc(g.title) + '">').join('');
+      const off = A.flags.disabled().map((id) => A.games.find((g) => g.id === id) || { id, title: id });
+      $('.ad-offlist', body).innerHTML = off.length ? '<div style="display:grid;gap:8px">' + off.map((g) => '<div class="nf" style="align-items:center"><span style="flex:1"><b>' + esc(g.title) + '</b><small style="display:block;color:var(--fg-dim)">Hidden from players as broken</small></span><button class="btn btn-sm btn-ghost ad-on" data-id="' + esc(g.id) + '">Turn back on</button></div>').join('') + '</div>' : '<div class="empty">No games turned off.</div>';
+    };
     body.addEventListener('click', async (e) => {
       if (e.target.closest('.ad-ref')) { A.store.remove('trendCache'); paint(); }
+      const lk = e.target.closest('.ad-lockbtn'); if (lk) {
+        const turnOn = !lk.dataset.on; lk.disabled = true;
+        try { await A.flags.setLockdown(turnOn); A.ui.toast(turnOn ? 'Lockdown is on' : 'Lockdown is off', 'check'); } catch (err) { A.ui.toast('Couldn’t change lockdown.', 'info'); }
+        paintSite(); return;
+      }
+      if (e.target.closest('.ad-offbtn')) {
+        const q = $('.ad-offin', body).value.trim().toLowerCase(); const g = A.games.find((x) => x.status === 'live' && (x.title.toLowerCase() === q || x.id === q));
+        if (!g) { A.ui.toast('Pick a game from the list.', 'info'); return; }
+        try { await A.flags.disable(g.id); $('.ad-offin', body).value = ''; A.ui.toast(g.title + ' is turned off', 'check'); } catch (err) { A.ui.toast('Couldn’t turn that off.', 'info'); }
+        paintSite(); return;
+      }
+      const onb = e.target.closest('.ad-on'); if (onb) { try { await A.flags.enable(onb.dataset.id); A.ui.toast('Turned back on', 'check'); } catch (err) { A.ui.toast('Couldn’t turn that on.', 'info'); } paintSite(); return; }
       const op = e.target.closest('.ad-open'); if (op) { openGame(op.dataset.id); return; }
       const fx = e.target.closest('.ad-fix'); if (fx) { const ids = fx.dataset.ids.split(',').map(Number); const { error } = await A.cloud.client.from('game_reports').delete().in('id', ids); if (error) A.ui.toast('Couldn’t clear that.', 'info'); else { A.ui.toast('Marked fixed', 'check'); paint(); } return; }
       const d = e.target.closest('.ad-del'); if (d) { const ids = d.dataset.ids.split(',').map(Number); const { error } = await A.cloud.client.from('game_requests').delete().in('id', ids); if (error) A.ui.toast('Couldn’t delete that.', 'info'); else { d.closest('.nf').remove(); A.ui.toast('Dismissed', 'check'); } }
@@ -995,6 +1018,9 @@
       } catch (err) { btn.disabled = false; m.el.querySelector('.rp-err').textContent = 'Couldn’t send right now. Check your connection and try again.'; }
     });
   }
+
+  /* The owner switched games on or off (lockdown.js): rebuild the library in place. */
+  onEv('flags', () => { LIVE.length = 0; A.games.filter((g) => g.status === 'live').forEach((g) => LIVE.push(g)); refreshLibraries(); });
 
   /* ---------------------------------------------------------------- BOOT */
   paintDock(); tickClock(); paintHome();
