@@ -55,8 +55,8 @@
   const port = (o) => Object.assign({ status: 'live', path: 'games/play.html?g=' + o.id, dir: o.id, entry: 'index.html' }, o);
   const games = [
     // ----- Popular -----
-    { id: 'minecraft', title: 'Minecraft', status: 'live', popular: true, tags: ['Sandbox', 'Adventure'], hue: 110, thumb: 'void',
-  path: 'horizon/index.html',
+    { id: 'minecraft', title: 'Minecraft 26.3', status: 'live', popular: true, tags: ['Sandbox', 'Adventure'], hue: 110, image: 'minecraft',
+  path: 'horizon/dist/index.html',
   tagline: 'Minecraft Java 26.3, rebuilt in Rust.', author: 'Horizon project', license: 'MIT (engine)', repo: 'horizon-rust/horizon',
   controls: 'WASD · mouse · click to capture' },
     port({ id: '2048', title: '2048', popular: true, tags: ['Puzzle'], hue: 35, image: '2048',
@@ -549,8 +549,6 @@
       tagline: 'Floor it and chase the fastest time.', author: 'Various', license: 'See source', repo: 'chomikjr/Nova', controls: 'Arrows / WASD' }),
     port({ id: 'mineblocks', title: 'Mine Blocks', tags: ['Sandbox'], hue: 176, image: 'mineblocks', dir: '../mineblocks',
       tagline: 'Build, break and experiment however you like.', author: 'Various', license: 'See source', repo: 'chomikjr/Nova', controls: 'Mouse / keyboard' }),
-    port({ id: 'minecraft-26.3', title: 'Minecraft 26.3', tags: ['Sandbox'], hue: 351, image: 'splash', dir: '../minecraft-26.3',
-      tagline: 'Build, break and experiment however you like. Now in 3D', author: 'Various', license: 'See source', repo: 'chomikjr/Nova', controls: 'Mouse / keyboard' }),
     port({ id: 'minecraft-1.12.2', title: 'Minecraft 1.12.2 (Eaglercraft)', tags: ['Sandbox'], hue: 91, image: 'minecraft-1.12.2', dir: '../minecraft-1.12.2',
       tagline: 'Build, break and experiment however you like.', author: 'Various', license: 'See source', repo: 'chomikjr/Nova', controls: 'Mouse / keyboard' }),
     port({ id: 'minecraft-1.5.2', title: 'Minecraft 1.5.2', tags: ['Sandbox'], hue: 119, image: 'minecraft-1.5.2', dir: '../minecraft-1.5.2',
