@@ -1,5 +1,4 @@
 /* Server-side gate (Vercel Routing Middleware).
-   - horizon/ (Minecraft 26.3 with its game files) is private: it needs a valid pass.
    - Games that are switched off stay unreachable by direct link.
    - In lockdown, every game needs a pass, so the "shut down" page can't be skipped
      by going to a game's address directly.
@@ -10,7 +9,7 @@ const SUPABASE = 'https://oazqmjnkkyqwxpsglgcb.supabase.co';
 const KEY = 'sb_publishable_h-I9xAYcRlVRze13k2v40Q_CZ6Rf8C3';
 const OFF = ['/games/gta-3/', '/games/how-to-fish/'];
 
-export const config = { matcher: ['/horizon/:path*', '/games/:path*'] };
+export const config = { matcher: ['/games/:path*'] };
 
 const cache = new Map(); // token -> { at, valid, lockdown }
 async function status(token) {
@@ -43,14 +42,12 @@ export default async function middleware(request) {
   if (OFF.some((p) => path.startsWith(p))) return deny('This game is unavailable right now.');
   const m = /(?:^|;\s*)nova_pass=([0-9a-f-]{36})/i.exec(request.headers.get('cookie') || '');
   const token = m ? m[1] : null;
-  const isPrivate = path.startsWith('/horizon/');
-  if (!isPrivate && !token) {
+  if (!token) {
     const s = await status(null);
     if (s.lockdown) return deny('Nova has shut down.');
     return; // carry on to the file
   }
   const s = await status(token);
   if (s.valid) return;
-  if (isPrivate) return deny('This game is private.');
   if (s.lockdown) return deny('Nova has shut down.');
 }
