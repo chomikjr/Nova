@@ -35,9 +35,9 @@
 
   /* ---------------------------------------------------------------- APPS */
   const APPS = {
-    games:        { title: 'Games',        icon: 'gamepad', bg: TILE, w: 1060, h: 720, render: renderGames },
+    games:        { title: 'Neam',         icon: 'gamepad', bg: TILE, w: 1180, h: 760, render: renderGames },
     browser:      { title: 'Browser',      icon: 'globe',   bg: TILE, w: 1120, h: 760, render: renderBrowser },
-    music:        { title: 'Music',        icon: 'music',   bg: TILE, w: 470, h: 700, render: renderMusic },
+    music:        { title: 'Novify',       icon: 'music',   bg: TILE, w: 1000, h: 680, render: renderMusic },
     achievements: { title: 'Achievements', icon: 'trophy',  bg: TILE, w: 780, h: 640, render: renderAchievements },
     leaderboard:  { title: 'Leaderboard',  icon: 'chart',   bg: TILE, w: 540, h: 640, render: renderLeaderboard },
     profile:      { title: 'Profile',      icon: 'user',    bg: TILE, w: 580, h: 660, render: renderProfile },
@@ -642,11 +642,13 @@
   function renderGames(body) {
     let q = '', filter = 'all', sort = 'popular';
     const tags = [...new Set(LIVE.flatMap((g) => g.tags))].sort();
-    body.innerHTML = '<div class="app"><div class="app-toolbar"><label class="search-box"><span class="sr-only">Search games</span>' + icon('search') + '<input class="input lib-q" type="search" placeholder="Search ' + LIVE.length + ' games" autocomplete="off"></label>' +
+    body.innerHTML = '<div class="neam"><nav class="neam-top" aria-label="Neam"><span class="neam-brand">NEAM</span><button class="neam-tab is-on" data-f="all">Store</button><button class="neam-tab" data-f="recent">Library</button><button class="neam-tab" data-f="fav">Wishlist</button><span style="flex:1"></span><span class="neam-user">' + esc((A.auth.current() || { username: 'Guest' }).username) + '</span></nav>' +
+      '<div class="neam-body"><aside class="neam-side"><label class="search-box neam-search"><span class="sr-only">Search games</span>' + icon('search') + '<input class="input lib-q" type="search" placeholder="Search ' + LIVE.length + ' games" autocomplete="off"></label><div class="neam-list" aria-label="All games"></div></aside>' +
+      '<div class="neam-main app"><div class="app-toolbar">' +
       '<select class="select lib-sort" style="width:auto;min-height:42px;border-radius:999px" aria-label="Sort"><option value="popular">Popular</option><option value="az">A–Z</option><option value="played">Most played</option><option value="recent">Recently played</option><option value="liked">Most liked</option></select>' +
       '<div class="chips" role="group" aria-label="Filter">' + [['all', 'All'], ['fav', icon('heart') + 'Favorites'], ['recent', icon('clock') + 'Recent'], ['new', icon('sparkles') + 'Not played yet']].concat(tags.map((t) => [t, esc(t)])).map(([k, l]) => '<button class="chip" data-f="' + esc(k) + '" aria-pressed="' + (k === 'all') + '">' + l + '</button>').join('') + '</div></div>' +
-      '<div class="lib-content" style="display:grid;gap:22px"></div></div>';
-    const content = $('.lib-content', body);
+      '<div class="lib-content" style="display:grid;gap:22px"></div></div></div></div>';
+    const content = $('.lib-content', body), side = $('.neam-list', body);
     const paint = () => {
       stopThumbs(content);
       const m = A.meta.get(), r = (id) => A.scores.get(id);
@@ -679,10 +681,12 @@
           : '<div class="empty">' + (filter === 'fav' ? 'No favorites yet — tap the heart on any game.' : filter === 'recent' ? 'Nothing played yet.' : 'No games match that.') + (q ? '<div style="margin-top:12px"><button class="btn btn-sm" data-app-open="request">' + icon('send') + 'Request “' + esc(q) + '”</button></div>' : '') + '</div>';
       }
       content.innerHTML = html; fillCovers(content);
+      side.innerHTML = '<div class="neam-side-h">' + (filter === 'all' ? 'All games' : filter === 'fav' ? 'Wishlist' : filter === 'recent' ? 'Recently played' : esc(filter)) + ' <span>(' + list.length + ')</span></div>' +
+        list.slice(0, 400).map((g) => '<button class="neam-row" data-play="' + g.id + '">' + gameIco(g, 'neam-ico') + '<span>' + esc(g.title) + '</span>' + (m.tried[g.id] ? '' : '<i class="neam-new">NEW</i>') + '</button>').join('');
     };
     $('.lib-q', body).addEventListener('input', (e) => { q = e.target.value.trim().toLowerCase(); paint(); });
     $('.lib-sort', body).addEventListener('change', (e) => { sort = e.target.value; paint(); });
-    $('.chips', body).addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f; $$('.chip', body).forEach((c) => c.setAttribute('aria-pressed', String(c === b))); paint(); });
+    body.addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f; $$('.chip', body).forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.f === filter))); $$('.neam-tab', body).forEach((c) => c.classList.toggle('is-on', c.dataset.f === filter)); paint(); });
     body.addEventListener('click', (e) => {
       const f = e.target.closest('[data-fav]');
       if (f) { e.stopPropagation(); const on = A.meta.toggleFav(f.dataset.fav); f.classList.toggle('on', on); f.classList.remove('pop'); void f.offsetWidth; f.classList.add('pop'); A.audio.sfx(on ? 'coin' : 'click'); renderHome(); return; }
@@ -719,22 +723,20 @@
         ? vst.tracks.map((t, i) => { const on = n.kind === 'file' && n.station === vst && n.index === i; return '<button class="mu-song' + (on ? ' is-on' : '') + '" data-song="' + i + '"><span class="mu-num">' + (on && playing ? '<span class="mu-eq"><i></i><i></i><i></i></span>' : i + 1) + '</span><span class="mu-st"><b>' + esc(t.title) + '</b>' + (t.artist ? '<small>' + esc(t.artist) + '</small>' : '') + '</span></button>'; }).join('')
         : Object.entries(mu.tracks).map(([k, t]) => { const on = n.kind === 'gen' && n.key === k; return '<button class="track" data-track="' + k + '" aria-pressed="' + on + '"><span class="app-ico" style="background:' + (GEN_BG[k] || '#333') + '">' + icon('music') + '</span><span style="flex:1"><b>' + esc(t.name) + '</b><div style="font-size:13px;color:var(--dim)">' + esc(t.vibe) + ', ' + t.bpm + ' BPM</div></span>' + (on && playing ? '<span class="pill ok">Playing</span>' : '') + '</button>'; }).join('');
       const pos = mu.position() || { time: 0, duration: 0 };
-      body.innerHTML = '<div class="app mu-app">' +
-        '<div class="mu-hero">' + musicArt(n, 132, playing) +
-          '<div class="mu-now"><span class="os-label">' + (playing ? 'Now playing' : 'Paused') + (n.kind === 'file' ? ', ' + (n.index + 1) + ' of ' + n.count : '') + '</span><h2>' + esc(n.name) + '</h2><p class="app-sub">' + esc(n.kind === 'file' ? n.sub : n.vibe + ', generated live, never repeats the same way') + '</p></div></div>' +
-        (n.kind === 'file' ? '<div class="mu-prog"><span class="mu-t0">' + fmtT(pos.time) + '</span><div class="mu-bar" role="slider" aria-label="Seek" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + (pos.duration ? Math.round(pos.time / pos.duration * 100) : 0) + '"><i style="width:' + (pos.duration ? pos.time / pos.duration * 100 : 0) + '%"></i></div><span class="mu-t1">' + fmtT(pos.duration) + '</span></div>'
-          : '<div class="viz music-viz" style="width:100%;height:46px">' + '<i></i>'.repeat(32) + '</div>') +
-        '<div class="mu-ctrl">' +
-          '<button class="icon-btn mu-shuffle' + (A.settings.get('shuffle') ? ' is-on' : '') + '" aria-pressed="' + !!A.settings.get('shuffle') + '" aria-label="Shuffle"' + (n.kind === 'file' ? '' : ' disabled') + '>' + icon('shuffle') + '</button>' +
-          '<button class="icon-btn mu-prev" aria-label="Previous"' + (n.kind === 'file' ? '' : ' disabled') + '>' + icon('skipBack') + '</button>' +
-          '<button class="big-play mu-toggle" aria-label="' + (playing ? 'Pause' : 'Play') + '">' + icon(playing ? 'pause' : 'play') + '</button>' +
-          '<button class="icon-btn mu-next" aria-label="Next">' + icon('skip') + '</button>' +
-          '<span style="width:40px"></span></div>' +
-        '<div class="setting-row" style="width:100%"><label class="label" for="mu-vol">Volume</label><input class="range" type="range" id="mu-vol" min="0" max="1" step="0.05" value="' + A.settings.get('musicVol') + '"></div>' +
-        '<div class="mu-tabs" role="tablist">' + tabs + '</div>' +
-        '<div class="mu-list">' + songs + '</div>' +
-        (!list.length && owner ? '<div class="mu-hint">' + icon('upload') + '<div><b>Add your own stations</b><br>Put MP3s in <code>assets/audio/hip hop/</code>, <code>assets/audio/lofi/</code>… (any folder name), then push. Each folder becomes a station.</div></div>' : '') +
-        '<div class="setting-row" style="width:100%;text-align:left"><div><div class="label">Pause in games</div><div class="desc">Games play their own sound</div></div><label class="switch"><input type="checkbox" class="mu-pause"' + (A.settings.get('pauseMusicInGames') ? ' checked' : '') + '><span></span></label></div></div>';
+      const art = vst ? '<span class="nv-cover" style="background:' + stBg(vst) + '">' + (vst.cover ? '<img src="' + esc(vst.cover) + '" alt="">' : icon('music')) + '</span>' : '<span class="nv-cover" style="background:' + GEN_BG.neon + '">' + icon('music') + '</span>';
+      body.innerHTML = '<div class="novify">' +
+        '<aside class="nv-side"><div class="nv-brand">' + icon('music') + 'Novify</div><div class="nv-side-h">Your library</div><div class="nv-lib" role="tablist">' + tabs + '</div>' +
+          '<label class="nv-opt"><input type="checkbox" class="mu-pause"' + (A.settings.get('pauseMusicInGames') ? ' checked' : '') + '> Pause in games</label></aside>' +
+        '<main class="nv-main"><header class="nv-head">' + art + '<div><span class="nv-kind">Station</span><h2>' + esc(vst ? vst.name : 'Generated') + '</h2><p>Nova Music · ' + (vst ? vst.tracks.length : Object.keys(mu.tracks).length) + ' songs</p></div></header>' +
+          '<div class="nv-actions"><button class="nv-big mu-toggle" aria-label="' + (playing ? 'Pause' : 'Play') + '">' + icon(playing ? 'pause' : 'play') + '</button><button class="icon-btn mu-shuffle' + (A.settings.get('shuffle') ? ' is-on' : '') + '" aria-pressed="' + !!A.settings.get('shuffle') + '" aria-label="Shuffle">' + icon('shuffle') + '</button></div>' +
+          '<div class="nv-table"><div class="nv-th"><span>#</span><span>Title</span></div><div class="mu-list">' + songs + '</div></div>' +
+          (!list.length && owner ? '<div class="mu-hint">' + icon('upload') + '<div><b>Add your own stations</b><br>Put MP3s in <code>assets/audio/hip hop/</code>, <code>assets/audio/lofi/</code>… (any folder name), then push. Each folder becomes a station.</div></div>' : '') +
+        '</main>' +
+        '<footer class="nv-bar"><div class="nv-now">' + musicArt(n, 52, playing) + '<div><b>' + esc(n.name) + '</b><small>' + esc(n.kind === 'file' ? n.sub : n.vibe) + '</small></div></div>' +
+          '<div class="nv-center"><div class="nv-ctrl"><button class="icon-btn mu-prev" aria-label="Previous"' + (n.kind === 'file' ? '' : ' disabled') + '>' + icon('skipBack') + '</button><button class="nv-play mu-toggle" aria-label="' + (playing ? 'Pause' : 'Play') + '">' + icon(playing ? 'pause' : 'play') + '</button><button class="icon-btn mu-next" aria-label="Next">' + icon('skip') + '</button></div>' +
+          (n.kind === 'file' ? '<div class="mu-prog"><span class="mu-t0">' + fmtT(pos.time) + '</span><div class="mu-bar" role="slider" aria-label="Seek" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + (pos.duration ? Math.round(pos.time / pos.duration * 100) : 0) + '"><i style="width:' + (pos.duration ? pos.time / pos.duration * 100 : 0) + '%"></i></div><span class="mu-t1">' + fmtT(pos.duration) + '</span></div>' : '<div class="viz music-viz" style="width:100%;height:24px">' + '<i></i>'.repeat(32) + '</div>') + '</div>' +
+          '<label class="nv-vol">' + icon('volume') + '<span class="sr-only">Volume</span><input class="range" type="range" id="mu-vol" min="0" max="1" step="0.05" value="' + A.settings.get('musicVol') + '"></label></footer>' +
+      '</div>';
       startViz();
     };
     const play = () => { A.audio.unlock(); mu.held = false; if (!A.settings.get('music')) A.settings.set('music', true); setTimeout(() => mu.start(), 40); };

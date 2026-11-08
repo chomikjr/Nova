@@ -117,3 +117,80 @@ body.os ::selection { background: #444; color: #fff; }
 .lock-bottom b { font-family: var(--font-main) !important; font-weight: 700 !important; letter-spacing: 2px; }
 .dock { left: 50% !important; right: auto !important; transform: translateX(-50%); width: auto !important; max-width: calc(100vw - 24px); }
 .dock .tb-mid, .dock .tb-right { position: static !important; transform: none !important; }
+
+/* ------------------------------------------------ Neam (game library) */
+.neam { position: absolute; inset: 0; display: flex; flex-direction: column; background: #12141b; font-family: var(--font-main); }
+.neam-top { height: 52px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 18px; background: #0b0c11; border-bottom: 1px solid #23262f; }
+.neam-brand { font-family: var(--font-header); font-weight: 900; letter-spacing: 5px; font-size: 15px; margin-right: 18px; color: #fff; }
+.neam-tab { border: 0; background: transparent; color: #8b90a0; font: 700 15px var(--font-main); letter-spacing: 1.5px; text-transform: uppercase; padding: 8px 14px; cursor: pointer; border-bottom: 2px solid transparent; }
+.neam-tab:hover { color: #fff; }
+.neam-tab.is-on { color: #fff; border-bottom-color: #9b7bff; }
+.neam-user { color: #b8bccb; font-weight: 700; font-size: 14px; }
+.neam-body { flex: 1; min-height: 0; display: flex; }
+.neam-side { width: 270px; flex: none; display: flex; flex-direction: column; background: #0f1117; border-right: 1px solid #23262f; }
+.neam-search { margin: 12px; }
+.neam-list { flex: 1; overflow-y: auto; padding: 0 6px 12px; }
+.neam-side-h { font-size: 12px; font-weight: 700; color: #6f7486; letter-spacing: 1.2px; text-transform: uppercase; padding: 6px 8px 8px; }
+.neam-side-h span { color: #4c5060; }
+.neam-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 5px 8px; border: 0; border-radius: 4px; background: transparent; color: #c7cad6; font: 600 14px var(--font-main); text-align: left; cursor: pointer; }
+.neam-row:hover { background: #1f2330; color: #fff; }
+.neam-row span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.neam-ico { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 3px; overflow: hidden; flex: none; font-size: 11px !important; }
+.neam-ico img { width: 100%; height: 100%; object-fit: cover; }
+.neam-new { font-style: normal; font-size: 10px; font-weight: 700; color: #9b7bff; letter-spacing: 1px; }
+.neam-main { flex: 1; min-width: 0; overflow-y: auto; background: linear-gradient(180deg, #1a1d29, #12141b 380px); }
+.neam .chip[aria-pressed="true"] { background: #9b7bff; color: #fff; border-color: #9b7bff; }
+.neam .lib-hero { border-radius: 6px; min-height: 280px; }
+.neam .lib-hero h3 { font-family: var(--font-header); letter-spacing: 3px; text-transform: uppercase; }
+.neam .lib-hero .btn-primary { background: linear-gradient(90deg, #7c5cff, #9b7bff); border-radius: 4px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 0 28px; }
+.neam .sec-title h4 { font-family: var(--font-main); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; font-size: 14px; color: #d6d9e4; }
+.neam .gcard { border-radius: 4px; }
+@media (max-width: 760px) { .neam-side { display: none; } }
+
+/* ------------------------------------------------------ Novify (music) */
+.novify { position: absolute; inset: 0; display: grid; grid-template-columns: 250px 1fr; grid-template-rows: 1fr 84px; background: #000; gap: 8px; padding: 8px; font-family: var(--font-main); }
+.nv-side { grid-row: 1; background: #121214; border-radius: 8px; padding: 16px 10px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+.nv-brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 20px; padding: 0 8px 10px; color: #fff; }
+.nv-brand svg { width: 26px; height: 26px; color: #c084fc; }
+.nv-side-h { color: #a1a1aa; font-weight: 700; font-size: 14px; padding: 4px 8px; }
+.nv-lib { display: flex; flex-direction: column; gap: 2px; }
+.novify .mu-tab { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; border: 0; border-radius: 6px; background: transparent; color: #fff; font: 600 15px var(--font-main); text-align: left; cursor: pointer; }
+.novify .mu-tab i { width: 44px; height: 44px; border-radius: 4px; flex: none; }
+.novify .mu-tab span { margin-left: auto; color: #71717a; font-size: 12px; }
+.novify .mu-tab:hover { background: #1f1f23; }
+.novify .mu-tab[aria-pressed="true"] { background: #26262b; }
+.nv-opt { margin-top: auto; display: flex; gap: 8px; align-items: center; color: #a1a1aa; font-size: 13px; padding: 8px; }
+.nv-main { grid-row: 1; background: linear-gradient(180deg, #3b1f6e 0%, #18151f 260px, #121214 420px); border-radius: 8px; overflow-y: auto; padding: 24px; min-width: 0; }
+.nv-head { display: flex; align-items: flex-end; gap: 22px; }
+.nv-cover { width: 180px; height: 180px; border-radius: 6px; flex: none; display: grid; place-items: center; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+.nv-cover img { width: 100%; height: 100%; object-fit: cover; }
+.nv-cover svg { width: 40%; height: 40%; color: #fff; }
+.nv-kind { font-size: 13px; font-weight: 700; color: #e4e4e7; }
+.nv-head h2 { font-family: var(--font-main); font-weight: 700; font-size: clamp(32px, 5vw, 64px); line-height: 1; margin: 6px 0 10px; color: #fff; }
+.nv-head p { color: #d4d4d8; font-weight: 600; margin: 0; }
+.nv-actions { display: flex; align-items: center; gap: 16px; margin: 24px 0 12px; }
+.nv-big { width: 56px; height: 56px; border-radius: 50%; border: 0; background: #a855f7; color: #000; display: grid; place-items: center; cursor: pointer; transition: transform .15s; }
+.nv-big:hover { transform: scale(1.06); background: #b875ff; }
+.nv-big svg { width: 24px; height: 24px; fill: currentColor; }
+.nv-th { display: grid; grid-template-columns: 40px 1fr; padding: 8px 12px; color: #a1a1aa; font-size: 13px; border-bottom: 1px solid #2a2a30; margin-bottom: 8px; }
+.novify .mu-song { display: grid; grid-template-columns: 40px 1fr; align-items: center; width: 100%; padding: 8px 12px; border: 0; border-radius: 4px; background: transparent; color: #fff; font: 600 15px var(--font-main); text-align: left; cursor: pointer; }
+.novify .mu-song:hover { background: rgba(255,255,255,.08); }
+.novify .mu-song.is-on b { color: #c084fc; }
+.novify .mu-song small { display: block; color: #a1a1aa; font-weight: 500; font-size: 13px; }
+.novify .mu-num { color: #a1a1aa; }
+.nv-bar { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(180px, 1fr) minmax(260px, 2fr) minmax(140px, 1fr); align-items: center; gap: 16px; padding: 0 12px; color: #fff; }
+.nv-now { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nv-now b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nv-now small { color: #a1a1aa; font-size: 12px; }
+.nv-center { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.nv-ctrl { display: flex; align-items: center; gap: 14px; }
+.nv-play { width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; color: #000; display: grid; place-items: center; cursor: pointer; }
+.nv-play svg { width: 16px; height: 16px; fill: currentColor; }
+.nv-center .mu-prog { width: 100%; }
+.nv-vol { display: flex; align-items: center; gap: 8px; justify-self: end; color: #a1a1aa; }
+.nv-vol svg { width: 18px; height: 18px; }
+.nv-vol input { width: 110px; }
+@media (max-width: 760px) { .novify { grid-template-columns: 1fr; grid-template-rows: 1fr auto; } .nv-side { display: none; } .nv-bar { grid-template-columns: 1fr; padding: 8px; } .nv-vol { display: none; } }
+.neam-search { position: relative; flex: none !important; display: flex; align-items: center; }
+.neam-search > svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; color: #8b90a0; }
+.neam-search .input { padding-left: 36px; width: 100%; }
