@@ -7,6 +7,9 @@
   const KEY_LOCK = 'nova.lock', KEY_OFF = 'nova.offGames', KEY_PASS = 'nova.bypass';
   const get = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const set = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+  // The server-side gate (middleware.js) reads the pass from a cookie.
+  const setCookie = (t) => { document.cookie = 'nova_pass=' + (t || '') + '; Path=/; Max-Age=' + (t ? 2592000 : 0) + '; Secure; SameSite=Lax'; };
+  if (get(KEY_PASS)) setCookie(get(KEY_PASS));
 
   /* ---------- games switched off ("broken") ---------- */
   const isOff = (g) => g.status === 'broken';
@@ -58,7 +61,7 @@
       busy = true; out.textContent = 'nova@console:~$ verifying…';
       const token = await unlock(code);
       busy = false;
-      if (token) { set(KEY_PASS, token); out.textContent = 'nova@console:~$ access granted'; setTimeout(() => location.reload(), 500); }
+      if (token) { set(KEY_PASS, token); setCookie(token); out.textContent = 'nova@console:~$ access granted'; setTimeout(() => location.reload(), 500); }
       else out.innerHTML = 'nova@console:~$ <span class="bad">access denied</span>';
     });
     // Keep the desktop's keyboard shortcuts from firing underneath.
@@ -91,8 +94,32 @@
   A.on('auth', refresh);
 
   /* ---------- owner controls, used by the Admin app ---------- */
+  /* Code prompt for private games (same code, same server check). Resolves true once a pass is saved. */
+  function askPass() {
+    return new Promise((resolve) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:fixed;inset:0;z-index:2147482000;background:rgba(4,2,10,.7);display:grid;place-items:center';
+      wrap.innerHTML = '<div style="width:min(440px,90vw);background:#05030a;border:1px solid #2a2140;border-radius:10px;padding:14px;font:13px/1.6 ui-monospace,Consolas,monospace;color:#a7f3d0"><div class="pp-out">nova@console:~$ private game, access code required</div><input type="password" autocomplete="off" spellcheck="false" aria-label="Code" style="width:100%;box-sizing:border-box;background:transparent;border:0;outline:0;color:#a7f3d0;font:inherit"><div style="color:#6b6385;margin-top:6px">Enter to submit · Esc to cancel</div></div>';
+      document.body.appendChild(wrap);
+      const input = wrap.querySelector('input'), out = wrap.querySelector('.pp-out'); input.focus();
+      const done = (ok) => { wrap.remove(); resolve(ok); };
+      wrap.addEventListener('mousedown', (e) => { if (e.target === wrap) done(false); });
+      let busy = false;
+      input.addEventListener('keydown', async (e) => {
+        e.stopPropagation();
+        if (e.key === 'Escape') return done(false);
+        if (e.key !== 'Enter' || busy || !input.value) return;
+        const code = input.value; input.value = ''; busy = true; out.textContent = 'nova@console:~$ verifying…';
+        const token = await unlock(code); busy = false;
+        if (token) { set(KEY_PASS, token); setCookie(token); out.textContent = 'nova@console:~$ access granted'; setTimeout(() => done(true), 300); }
+        else out.innerHTML = 'nova@console:~$ <span style="color:#fca5a5">access denied</span>';
+      });
+    });
+  }
+
   A.flags = {
-    refresh,
+    refresh, askPass,
+    hasPass: () => !!get(KEY_PASS),
     disabled: () => cachedOff.slice(),
     async setLockdown(on) { const c = await client(); const { error } = await c.rpc('set_lockdown', { on_: !!on }); if (error) throw error; return refresh(); },
     async disable(id, note) { const c = await client(); const { error } = await c.from('disabled_games').upsert({ game_id: id, note: note || null, updated_at: new Date().toISOString() }); if (error) throw error; return refresh(); },

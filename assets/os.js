@@ -187,6 +187,7 @@
     const g = byId(id);
     if (!g) { const off = A.games.find((x) => x.id === id && x.status === 'broken'); if (off) A.ui.toast(off.title + ' is temporarily unavailable while we fix it.', 'info'); return; }
     closeStart(); closePalette();
+    if (g.private && A.flags && !A.flags.hasPass()) { A.flags.askPass().then((ok) => { if (ok) openGame(id); }); return; }
     if (g.external) {
       const w = window.open(g.external, '_blank', 'noopener');
       A.meta.played(id);

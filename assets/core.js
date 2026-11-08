@@ -55,7 +55,7 @@
   const port = (o) => Object.assign({ status: 'live', path: 'games/play.html?g=' + o.id, dir: o.id, entry: 'index.html' }, o);
   const games = [
     // ----- Popular -----
-    { id: 'minecraft', title: 'Minecraft 26.3', status: 'live', popular: true, tags: ['Sandbox', 'Adventure'], hue: 110, image: 'minecraft',
+    { id: 'minecraft', title: 'Minecraft 26.3', status: 'live', private: true, popular: true, tags: ['Sandbox', 'Adventure'], hue: 110, image: 'minecraft',
   path: 'horizon/dist/index.html',
   tagline: 'Minecraft Java 26.3, rebuilt in Rust.', author: 'Horizon project', license: 'MIT (engine)', repo: 'horizon-rust/horizon',
   controls: 'WASD · mouse · click to capture' },
