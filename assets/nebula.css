@@ -194,3 +194,12 @@ body.os ::selection { background: #444; color: #fff; }
 .neam-search { position: relative; flex: none !important; display: flex; align-items: center; }
 .neam-search > svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; color: #8b90a0; }
 .neam-search .input { padding-left: 36px; width: 100%; }
+
+/* ---------- installed app: Nova draws its own title bar (window controls overlay) */
+#wco-bar { display: none; }
+@media (display-mode: window-controls-overlay) {
+  #wco-bar { display: flex; align-items: center; position: fixed; z-index: 2000; left: env(titlebar-area-x, 0); top: env(titlebar-area-y, 0); width: env(titlebar-area-width, 100%); height: env(titlebar-area-height, 32px); padding-left: 14px; background: rgba(0,0,0,.55); backdrop-filter: blur(10px); -webkit-app-region: drag; app-region: drag; user-select: none; }
+  .wco-logo { font-family: var(--font-header); font-weight: 900; font-size: 11px; letter-spacing: 5px; color: rgba(255,255,255,.75); }
+  .os-home, .win-layer { top: env(titlebar-area-height, 32px) !important; }
+  .notifs, .start { -webkit-app-region: no-drag; app-region: no-drag; }
+}
