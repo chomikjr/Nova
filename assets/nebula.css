@@ -1,0 +1,119 @@
+/* Nova shell skin, adapted from NebulaHub by Abel (used with permission).
+   Loaded after os.css: restyles Nova's desktop, dock, start menu, windows and lock screen. */
+:root {
+  --font-main: 'Rajdhani', system-ui, sans-serif;
+  --font-header: 'Orbitron', 'Rajdhani', sans-serif;
+  --nb-glass: rgba(15, 15, 15, 0.75);
+  --nb-line: #333;
+  --nb-muted: #888;
+}
+body.os { background: #000; font-family: var(--font-main); }
+body.os ::selection { background: #444; color: #fff; }
+
+/* ---------------------------------------------------------------- boot */
+#boot-layer { position: fixed; inset: 0; background: #000; z-index: 99999; transition: opacity 1s ease; overflow: hidden; cursor: pointer; }
+#boot-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+#boot-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 2; width: 100%; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+.boot-logo { font-family: var(--font-header); font-weight: 900; font-size: 3.5rem; color: #fff; letter-spacing: 16px; margin: 0 0 8px; padding-left: 16px; opacity: 0; transform: scale(1.3); transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.boot-logo.show { opacity: 1; transform: scale(1); }
+.boot-sub { font-family: var(--font-main); color: #666; font-size: 0.8rem; letter-spacing: 8px; text-transform: uppercase; opacity: 0; transition: opacity 0.8s ease; margin: 0; }
+.boot-sub.show { opacity: 1; }
+#boot-bar-wrap { width: 180px; height: 1px; background: #1a1a1a; margin: 40px 0 14px; opacity: 0; transition: opacity 0.4s ease; }
+#boot-bar-wrap.show { opacity: 1; }
+#boot-bar { height: 100%; width: 0%; background: #fff; transition: width 0.1s linear; }
+#boot-status-msg { font-family: var(--font-main); font-size: 10px; font-weight: 700; color: #555; letter-spacing: 3px; text-transform: uppercase; opacity: 0; transition: opacity 0.3s ease; height: 14px; }
+#boot-status-msg.show { opacity: 1; }
+.boot-credit { font-family: var(--font-main); font-size: 11px; font-weight: 700; color: #3a3a3a; letter-spacing: 4px; text-transform: uppercase; position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 1s ease; z-index: 3; white-space: nowrap; margin: 0; }
+.boot-credit.show { opacity: 1; }
+.boot { display: none !important; }
+
+/* ---------------------------------------------------------- desktop */
+.os-home { padding: 0 !important; }
+#hud-top { position: absolute; top: 5%; left: 50%; transform: translateX(-50%); text-align: center; z-index: 5; pointer-events: none; text-shadow: 0 10px 40px rgba(0,0,0,0.8); width: max-content; max-width: 90vw; }
+.hud-day { font-family: var(--font-header); font-weight: 900; font-size: 3rem; color: rgba(255,255,255,0.72); letter-spacing: 10px; text-transform: uppercase; margin: 0; line-height: 1.1; }
+.hud-date { font-family: var(--font-main); font-weight: 700; font-size: 13px; letter-spacing: 4px; color: rgba(255,255,255,0.55); margin-top: 6px; }
+
+.desk-icons { position: absolute; top: 24px; left: 24px; display: grid; grid-auto-flow: column; grid-template-rows: repeat(auto-fill, 98px); gap: 6px 10px; max-height: calc(100% - 120px); z-index: 10; }
+.desktop-app { width: 84px; height: 95px; display: flex; flex-direction: column; align-items: center; cursor: pointer; border: 0; background: transparent; color: #fff; padding: 4px 0 0; border-radius: 12px; transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), background .2s; font: inherit; }
+.desktop-app:hover { transform: scale(1.05); background: rgba(255,255,255,.06); }
+.desktop-app:focus-visible { outline: 2px solid #fff; }
+.d-icon { width: 50px !important; height: 50px !important; border-radius: 12px !important; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); flex: none; }
+.d-label { margin-top: 6px; font-size: 12px; font-weight: 700; color: #fff; text-align: center; text-shadow: 0 2px 5px #000, 0 0 2px #000; width: 82px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* right sidebar */
+.right-sidebar { position: absolute; right: 25px; top: 8%; width: 300px; display: flex !important; flex-direction: column; gap: 20px; z-index: 50; }
+.sidebar__section { display: flex; flex-direction: column; gap: 10px; }
+.sidebar__title { margin: 0; font-family: var(--font-main); font-size: 12px; font-weight: 700; color: var(--nb-muted); text-transform: uppercase; letter-spacing: 1.5px; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+.sidebar__card { width: 100%; text-align: left; font: inherit; color: #fff; background: var(--nb-glass); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--nb-line); border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.sidebar__card:hover:not(.is-static) { background: rgba(30, 30, 30, 0.9); border-color: #fff; transform: translateX(-5px) scale(1.02); }
+.sidebar__card.is-static { cursor: default; }
+.sidebar__info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.sidebar__info strong { font-size: 15px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar__info small { font-size: 12px; color: #aaa; font-weight: 600; }
+.sidebar__card .sb-art, .sidebar__card .m-art { width: 44px !important; height: 44px !important; border-radius: 10px !important; flex: none; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+.sidebar__card .sb-art img { width: 100%; height: 100%; object-fit: cover; }
+.play-overlay { position: absolute; right: 15px; width: 18px; height: 18px; color: #fff; opacity: 0; transition: 0.3s; }
+.sidebar__card:hover .play-overlay { opacity: 1; transform: scale(1.2); }
+.sidebar__chevron { width: 18px; height: 18px; color: var(--nb-muted); flex: none; }
+.sidebar__card .bar { background: rgba(255,255,255,.12); }
+
+/* ------------------------------------------------------------- dock */
+.dock { bottom: 15px !important; height: 56px !important; background: rgba(10,10,10,0.8) !important; backdrop-filter: blur(10px); border: 1px solid var(--nb-line) !important; border-radius: 18px !important; box-shadow: 0 16px 40px rgba(0,0,0,.6) !important; padding: 0 12px !important; gap: 10px; }
+.dk { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; transition: all 0.2s ease; }
+.dk:hover { background: rgba(255,255,255,0.1); transform: translateY(-5px) !important; }
+.dk .app-ico, .dk .dk-thumb { width: 32px !important; height: 32px !important; border-radius: 8px !important; }
+.dk-start .app-ico { background: #fff !important; }
+.dk-start .app-ico svg path { fill: #000 !important; }
+.tb-search { background: #1a1a1a !important; border: 1px solid var(--nb-line) !important; border-radius: 10px !important; font-family: var(--font-main) !important; font-weight: 600; }
+.fps { font-family: var(--font-main); font-weight: 700; letter-spacing: .04em; background: #111; border: 1px solid var(--nb-line); border-radius: 8px; padding: 4px 10px; }
+.dk-clock b, .dk-clock span { font-family: var(--font-main); font-weight: 700; }
+.dk-tip { font-family: var(--font-main); font-weight: 700; background: #111 !important; border: 1px solid var(--nb-line) !important; }
+
+/* app icons: a replaceable image on top of the built-in glyph */
+.app-ico.has-img { position: relative; overflow: hidden; }
+.app-ico.has-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+
+/* -------------------------------------------------------- start menu */
+.start { background: #111 !important; border: 1px solid var(--nb-line) !important; border-radius: 16px !important; box-shadow: 0 20px 60px rgba(0,0,0,0.9) !important; font-family: var(--font-main); }
+.start .search-box { background: #1a1a1a; border: 1px solid var(--nb-line); border-radius: 8px; }
+.start .sa { border-radius: 12px; }
+.start .sa:hover, .start .sl:hover { background: #222; }
+.start .sa span { color: #aaa; font-weight: 600; }
+.start .os-label { font-family: var(--font-main); font-weight: 700; letter-spacing: 1.5px; color: #fff; text-transform: none; font-size: 15px; }
+
+/* ----------------------------------------------------------- windows */
+.win { background: rgba(15,15,15,.96) !important; border: 1px solid var(--nb-line) !important; border-radius: 12px; }
+.win.is-focus { border-color: #555 !important; box-shadow: 0 40px 120px -30px rgba(0,0,0,.95) !important; }
+.win-bar { background: #111 !important; border-bottom: 1px solid var(--nb-line) !important; height: 40px; }
+.win-title { font-family: var(--font-header); font-weight: 700; font-size: 12px; color: #bbb; letter-spacing: 2px; text-transform: uppercase; }
+.win.is-focus .win-title { color: #fff; }
+.wb { border-radius: 8px !important; }
+.wb.close:hover { background: #fff !important; color: #000 !important; box-shadow: 0 0 8px #fff; }
+
+/* -------------------------------------------------------- lock screen */
+.lock { background: #000 !important; }
+.lock-top { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -55%); display: flex; flex-direction: column; align-items: center; text-align: center; text-shadow: 0 5px 25px rgba(0,0,0,0.9); width: 100%; }
+.l-day, .l-date, .l-time { opacity: 0; transform: translateY(30px); animation: nbUp .6s cubic-bezier(0.2,0.8,0.2,1) forwards; }
+.l-day { font-family: var(--font-header); font-weight: 900; font-size: clamp(2.6rem, 8vw, 5rem); letter-spacing: 12px; padding-left: 12px; color: #fff; margin: 0 0 10px; text-transform: uppercase; animation-delay: .2s; }
+.l-date { font-family: var(--font-main); font-size: 1.3rem; letter-spacing: 4px; font-weight: 700; color: #fff; margin-bottom: 8px; animation-delay: .35s; }
+.l-time { font-family: var(--font-main); font-size: 1.1rem; letter-spacing: 3px; font-weight: 700; color: #fff; animation-delay: .5s; }
+@keyframes nbUp { to { opacity: 1; transform: translateY(0); } }
+.lock.is-gone { transform: translateY(-100%) !important; transition: transform .6s cubic-bezier(0.7,0,0.3,1) !important; }
+.lock-bottom .btn-primary { background: #fff; color: #000; }
+
+/* ------------------------------------------------- user wallpapers */
+.bg-user { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; opacity: .9; pointer-events: none; }
+
+@media (max-width: 760px) {
+  .right-sidebar { position: static; width: auto; margin: 110px 14px 100px; }
+  .desk-icons { display: none; }
+  .hud-day { font-size: 2rem; letter-spacing: 6px; }
+}
+.bg-tile { position: relative; }
+.bg-del { position: absolute; top: 6px; right: 6px; z-index: 3; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.7); color: #fff; font-size: 12px; opacity: 0; transition: opacity .2s; }
+.bg-tile:hover .bg-del, .bg-del:focus { opacity: 1; }
+.lock { display: block !important; }
+.lock-bottom { position: absolute !important; left: 50%; bottom: 9%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font-family: var(--font-main); }
+.lock-bottom b { font-family: var(--font-main) !important; font-weight: 700 !important; letter-spacing: 2px; }
+.dock { left: 50% !important; right: auto !important; transform: translateX(-50%); width: auto !important; max-width: calc(100vw - 24px); }
+.dock .tb-mid, .dock .tb-right { position: static !important; transform: none !important; }

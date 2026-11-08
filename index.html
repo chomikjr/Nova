@@ -20,19 +20,27 @@
   <link rel="stylesheet" href="assets/core.css">
   <link rel="stylesheet" href="assets/os.css">
   <link rel="stylesheet" href="assets/galaxy.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/nebula.css">
 </head>
 <body class="os">
-  <div class="boot" id="boot" aria-hidden="true"><div class="boot-in"><div class="boot-logo">Nova</div><div class="boot-bar"><i></i></div></div></div>
+  <div class="boot" id="boot" aria-hidden="true"></div>
+  <section id="boot-layer" aria-label="Starting Nova">
+    <canvas id="boot-canvas"></canvas>
+    <div id="boot-content">
+      <h1 class="boot-logo" id="boot-title">NOVA</h1>
+      <p class="boot-sub" id="boot-subtitle">GAME OS // V3</p>
+      <div id="boot-bar-wrap"><div id="boot-bar"></div></div>
+      <div id="boot-status-msg">INITIALIZING...</div>
+    </div>
+    <p class="boot-credit" id="boot-credit">Shell by Abel · Nova by Ryan</p>
+  </section>
 
   <main class="os-home" id="os-home" aria-label="Desktop">
-    <div class="desk">
-      <section class="desk-left">
-        <h1 class="os-day" id="os-day">Monday</h1>
-        <div class="os-date" id="os-date"></div>
-        <nav class="desk-icons" id="desk-icons" aria-label="Desktop shortcuts"></nav>
-      </section>
-      <aside class="widgets" id="widgets" aria-label="Widgets"></aside>
-    </div>
+    <header id="hud-top"><div class="hud-day" id="os-day">Monday</div><div class="hud-date" id="os-date"></div></header>
+    <nav class="desk-icons" id="desk-icons" aria-label="Desktop shortcuts"></nav>
+    <aside id="widgets" class="right-sidebar" aria-label="Quick access"></aside>
   </main>
 
   <div class="win-layer" id="win-layer" aria-live="polite"><div class="snap-hint" id="snap-hint"></div></div>
@@ -41,6 +49,7 @@
   <div class="dk-tip" id="dk-tip" role="tooltip"></div>
   <div class="start os-glass" id="start" role="dialog" aria-label="Start menu"></div>
 
+  <script src="assets/nebula-boot.js"></script>
   <script src="assets/shaders.js"></script>
   <script src="assets/core.js"></script>
   <script src="assets/lockdown.js"></script>

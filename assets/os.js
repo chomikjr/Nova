@@ -53,7 +53,8 @@
   const appIco = (id, cls) => {
     const a = APPS[id];
     if (id === 'profile') { const u = A.auth.current(); if (u) return '<span class="app-ico av ' + (cls || '') + '" style="background:' + hueBg(u.hue) + '">' + esc(u.username[0].toUpperCase()) + '</span>'; }
-    return '<span class="app-ico ' + (cls || '') + '" style="background:' + (SHADE[id] || a.bg) + '">' + (GLYPH[id] ? '<svg viewBox="0 0 24 24" aria-hidden="true">' + GLYPH[id] + '</svg>' : icon(a.icon)) + '</span>';
+    // Each app's icon is assets/icons/apps/<id>.png: replace that file to change it everywhere.
+    return '<span class="app-ico has-img ' + (cls || '') + '" style="background:' + (SHADE[id] || a.bg) + '"><img src="assets/icons/apps/' + id + '.png" alt="" onerror="this.remove()">' + (GLYPH[id] ? '<svg viewBox="0 0 24 24" aria-hidden="true">' + GLYPH[id] + '</svg>' : icon(a.icon)) + '</span>';
   };
   const gameIco = (g, cls) => g.image
     ? '<span class="' + (cls || 'dk-thumb') + '"><img src="games/ports/_thumbs/' + g.image + '.webp" alt="" loading="lazy"></span>'
@@ -195,7 +196,7 @@
     }
     const url = g.path + (g.path.indexOf('?') >= 0 ? '&' : '?') + 'embed=1';
     return openWindow('game:' + id, {
-      title: g.title, iconHtml: gameIco(g), game: g, w: Math.min(1140, innerWidth * 0.82), h: Math.min(780, innerHeight * 0.8),
+      title: g.windowTitle || g.title, iconHtml: gameIco(g), game: g, w: Math.min(1140, innerWidth * 0.82), h: Math.min(780, innerHeight * 0.8),
       extra: [
         { icon: 'heart', label: 'Favorite', init: (b) => b.classList.toggle('on', A.meta.isFav(id)), onClick: (b) => { const on = A.meta.toggleFav(id); b.classList.toggle('on', on); A.ui.toast(on ? 'Added to favorites' : 'Removed from favorites', 'heart'); refreshLibraries(); } },
         { icon: 'thumbsUp', label: 'Like', init: (b) => { A.scores.myLikes().then((s) => b.classList.toggle('on-like', s.has(id))); }, onClick: (b) => {
@@ -310,7 +311,7 @@
     const c = $('#dk-clock'); if (c) c.innerHTML = '<b>' + time + '</b><span>' + d.toLocaleDateString() + '</span>';
     const day = $('#os-day'), wd = d.toLocaleDateString('en-US', { weekday: 'long' });
     if (day && day.textContent !== wd) day.textContent = wd;
-    const dt = $('#os-date'); if (dt) dt.innerHTML = '<b>' + time + '</b><span>' + d.toLocaleDateString([], { month: 'long', day: 'numeric' }) + '</span>';
+    const dt = $('#os-date'); if (dt) dt.textContent = d.toLocaleDateString([], { month: 'long', day: 'numeric' }).toUpperCase() + '  ·  ' + time;
   }
   function greeting() { const h = new Date().getHours(), u = A.auth.current(); return (h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening') + (u ? ', ' + esc(u.username) : '') + '.'; }
   setInterval(tickClock, 1000 * 15);
@@ -340,12 +341,12 @@
   function showLock() {
     if (lockEl) return;
     const u = A.auth.current(), m = A.meta.get(), lv = A.meta.levelInfo(m.xp);
-    lockEl = A.ui.el('<div class="lock" role="dialog" aria-label="Lock screen"><div class="lock-top"><div class="lock-time" id="lock-time"></div><div class="lock-date" id="lock-date"></div></div>' +
+    lockEl = A.ui.el('<div class="lock" role="dialog" aria-label="Lock screen"><div class="lock-top"><div class="l-day" id="lock-day"></div><div class="l-date" id="lock-date"></div><div class="l-time" id="lock-time"></div></div>' +
       '<div class="lock-bottom"><span class="avatar" style="width:64px;height:64px;font-size:26px;border-radius:20px;background:' + (u ? hueBg(u.hue) : 'var(--tile)') + '">' + (u ? esc(u.username[0].toUpperCase()) : icon('user').replace('<svg', '<svg width="28" height="28"')) + '</span>' +
       '<b style="font-family:var(--font-os);font-weight:500;font-size:22px">' + (u ? esc(u.username) : 'Guest') + '</b><span style="color:var(--dim);font-size:14px">Level ' + lv.level + ', ' + lv.title + (m.streak.count > 1 ? ', ' + m.streak.count + '-day streak' : '') + '</span>' +
       '<button class="btn btn-primary btn-lg lock-go" style="margin-top:6px">' + icon('sparkles') + 'Enter Nova</button><span class="lock-hint">Click, tap or press any key</span></div></div>');
     document.body.appendChild(lockEl);
-    const paint = () => { const d = new Date(), h24 = A.settings.get('clock24'); const t = $('#lock-time'), dt = $('#lock-date'); if (!t) return; t.textContent = d.toLocaleTimeString([], { hour: h24 ? '2-digit' : 'numeric', minute: '2-digit', hour12: !h24 }).replace(/\s?[AP]M/i, ''); dt.textContent = d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }); };
+    const paint = () => { const d = new Date(), h24 = A.settings.get('clock24'); const t = $('#lock-time'), dt = $('#lock-date'); if (!t) return; t.textContent = '- ' + d.toLocaleTimeString([], { hour: h24 ? '2-digit' : 'numeric', minute: '2-digit', hour12: !h24 }) + ' -'; dt.textContent = d.toLocaleDateString([], { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase(); const dy = $('#lock-day'); if (dy) dy.textContent = d.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase(); };
     paint(); lockEl._t = setInterval(paint, 5000);
     const go = (e) => { if (e && e.type === 'keydown' && (e.key === 'Tab' || e.key === 'Shift')) return; unlockScreen(); };
     lockEl.addEventListener('click', go);
@@ -515,42 +516,31 @@
     const trm = A.scores.trendingCached(), trendList = LIVE.filter((g) => trm[g.id] && trm[g.id].recent > 0).sort((a, b) => trm[b.id].recent - trm[a.id].recent);
     const msLeft = new Date().setHours(24, 0, 0, 0) - Date.now(), hLeft = Math.floor(msLeft / 36e5), mLeft = Math.floor(msLeft % 36e5 / 6e4);
     const pct = Math.round(dl.progress / dl.goal * 100), wc = A.meta.weeklyCh();
+    // Right sidebar in the NebulaHub layout: Jump back in, Quick play (music), System status.
+    const jg = last ? last.g : ft;
     root.innerHTML =
-      (function () { const g = last ? last.g : ft;
-        return '<section data-wg="jump" class="wg wg-cont os-glass"><div class="wg-art" data-play="' + g.id + '" data-cover="' + g.id + '" role="button" tabindex="-1" aria-label="Play ' + esc(g.title) + '"></div><div class="wg-in"><div class="wg-sub">' + (last ? 'Last played ' + ago(last.at) : 'Today’s pick') + '</div>' +
-          '<div class="wg-title">' + esc(g.title) + '</div><div class="btn-row"><button class="btn-light" data-play="' + g.id + '">' + (last ? 'Resume' : 'Play') + '</button><button class="btn-soft" data-info="' + g.id + '">Details</button></div></div></section>'; })() +
-      '<section data-wg="quick" class="wg span-6 os-glass"><div class="wg-head"><span class="os-label">Quick play</span><button class="btn btn-sm btn-ghost" data-act="shuffle" aria-label="Shuffle">' + icon('shuffle') + 'Shuffle</button></div>' +
-      '<button class="wg-row" data-play="' + q.id + '"><span class="wg-ico" data-cover="' + q.id + '"></span><span class="wg-meta"><span class="wg-title" style="display:block">' + esc(q.title) + '</span><span class="wg-sub" style="display:block">' + esc(q.tagline) + '</span></span>' + icon('play', 'wg-chev') + '</button></section>' +
-      '<section data-wg="daily" class="wg os-glass"><div class="wg-sub">Today’s challenge</div><div class="wg-title" style="margin-top:2px;font-weight:500;white-space:normal">' + esc(dl.def.text) + '</div>' +
-      (dl.def.kind === 'featured' ? '<div class="wg-sub" style="margin-top:2px">Today’s game: <a href="#" data-play="' + ft.id + '">' + esc(ft.title) + '</a></div>' : '') +
-      '<div class="bar" style="margin:10px 0 6px"><i style="width:' + pct + '%"></i></div><div class="wg-sub">' + progressText(dl) + (dl.done ? '. Done, +' + dl.xp + ' XP.' : '. Resets in ' + hLeft + 'h ' + mLeft + 'm.') + '</div>' +
-      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div class="wg-sub">This week</div><div style="margin-top:2px;font-weight:500">' + esc(wc.def.text) + '</div><div class="bar" style="margin:8px 0 6px;height:4px"><i style="width:' + Math.round(wc.progress / wc.goal * 100) + '%"></i></div><div class="wg-sub">' + progressText(wc) + (wc.done ? '. Done.' : '. +500 XP when you finish.') + '</div></div></section>' +
-      '<section data-wg="level" class="wg os-glass"><div class="wg-head"><span class="os-label">Your level</span><span class="pill ' + (m.streak.count > 1 ? 'hot' : '') + '">' + icon('flame') + m.streak.count + '-day streak</span></div>' +
-      '<button class="wg-row" data-app="profile" style="padding:0"><span class="wg-ico" style="width:58px;height:58px;background:' + (u ? hueBg(u.hue) : 'var(--tile)') + ';font:700 24px var(--font-os)">' + (u ? esc(u.username[0].toUpperCase()) : icon('user')) + '</span><span class="wg-meta"><span class="wg-title" style="display:block">Level ' + lv.level + ', ' + lv.title + '</span><span class="wg-sub" style="display:block">' + lv.cur.toLocaleString() + ' / ' + lv.need.toLocaleString() + ' XP to next level</span></span></button>' +
-      '<div class="bar" style="margin-top:14px"><i style="width:' + (lv.pct * 100) + '%"></i></div>' +
-      '<div class="wg-actions"><button class="pill" data-app="achievements" style="cursor:pointer">' + icon('trophy') + achDone + '/' + achTotal + ' achievements</button>' + (u ? '' : '<button class="pill" data-act="signup" style="cursor:pointer">' + icon('cloud') + 'Sign up to sync</button>') + '</div></section>' +
-      '<section data-wg="music" class="wg os-glass"><div class="wg-row" style="cursor:default;padding:0">' + musicArt(track, 48) + '<span class="wg-meta"><span class="wg-title" style="display:block">' + (playing ? esc(track.name) : 'Music is off') + '</span><span class="wg-sub" style="display:block">' + (playing ? esc(track.sub) : esc(track.kind === 'file' ? track.station.name : 'Nova Radio')) + '</span></span>' +
-      '<button class="icon-btn" data-act="music-next" aria-label="Next song">' + icon('skip') + '</button><button class="big-play" data-act="music" style="flex:none" aria-label="' + (playing ? 'Pause' : 'Play') + '">' + icon(playing ? 'pause' : 'play') + '</button></div>' +
-      '<div class="viz" id="home-viz" style="margin-top:12px;height:18px">' + '<i></i>'.repeat(32) + '</div></section>' +
-      '<section data-wg="games" class="wg span-8 os-glass"><div class="wg-head"><span class="os-label">' + (favs.length ? 'Your favorites' : trendList.length >= 4 ? 'Trending now' : 'Popular right now') + '</span><button class="btn btn-sm btn-ghost" data-app="games">See all ' + LIVE.length + ' ' + icon('chevronRight') + '</button></div>' +
-      '<div class="mini-grid">' + (favs.length ? favs : trendList.length >= 4 ? trendList : LIVE.filter((g) => g.popular)).slice(0, 8).map((g) => '<button class="mini" data-play="' + g.id + '" data-cover="' + g.id + '"><span>' + esc(g.title) + '</span></button>').join('') + '</div></section>' +
-      '<section data-wg="system" class="wg os-glass"><div class="os-label" style="margin-bottom:14px">System status</div>' +
-      '<button class="wg-row" data-app="updates"><span class="wg-meta"><span class="wg-title" style="display:block">Update Log</span><span class="wg-sub" style="display:block">v' + A.config.version + '. See what changed</span></span>' + icon('chevronRight', 'wg-chev') + '</button>' +
-      '<button class="wg-row" data-app="request"><span class="wg-meta"><span class="wg-title" style="display:block;font-size:19px">Request a game</span><span class="wg-sub" style="display:block">Tell us what to add next</span></span>' + icon('chevronRight', 'wg-chev') + '</button>' +
-      '<button class="wg-row" data-act="search"><span class="wg-meta"><span class="wg-title" style="display:block;font-size:19px">Search anything</span><span class="wg-sub" style="display:block">Press <span class="kbd">/</span> anywhere</span></span>' + icon('search', 'wg-chev') + '</button></section>';
+      '<section data-wg="jump" class="sidebar__section"><h3 class="sidebar__title">Jump back in!</h3>' +
+        '<button class="sidebar__card" data-play="' + jg.id + '">' + gameIco(jg, 'sb-art') + '<span class="sidebar__info"><strong>' + esc(jg.title) + '</strong><small>' + (last ? 'Played ' + ago(last.at) : 'Today’s pick') + '</small></span>' + icon('play', 'play-overlay') + '</button></section>' +
+      '<section data-wg="music" class="sidebar__section"><h3 class="sidebar__title">Quick play</h3>' +
+        '<button class="sidebar__card" data-act="music">' + musicArt(track, 44) + '<span class="sidebar__info"><strong>' + (playing ? esc(track.name) : 'Not playing') + '</strong><small>Nova Music</small></span>' + icon(playing ? 'pause' : 'play', 'play-overlay') + '</button></section>' +
+      '<section data-wg="daily" class="sidebar__section"><h3 class="sidebar__title">Today’s challenge</h3>' +
+        '<div class="sidebar__card is-static"><span class="sidebar__info"><strong style="white-space:normal">' + esc(dl.def.text) + '</strong><small>' + progressText(dl) + (dl.done ? ', done (+' + dl.xp + ' XP)' : ', resets in ' + hLeft + 'h ' + mLeft + 'm') + '</small><span class="bar" style="margin-top:8px;height:3px"><i style="width:' + pct + '%"></i></span></span></div></section>' +
+      '<section data-wg="system" class="sidebar__section"><h3 class="sidebar__title">System status</h3>' +
+        '<button class="sidebar__card" data-app="updates"><span class="sidebar__info"><strong>Update log</strong><small>v' + A.config.version + ', see what changed</small></span>' + icon('chevronRight', 'sidebar__chevron') + '</button>' +
+        '<button class="sidebar__card" data-app="profile"><span class="sidebar__info"><strong>' + (u ? esc(u.username) : 'Guest') + ', level ' + lv.level + '</strong><small>' + achDone + '/' + achTotal + ' achievements · ' + m.streak.count + '-day streak</small></span>' + icon('chevronRight', 'sidebar__chevron') + '</button></section>';
     const di = $('#desk-icons');
     if (di) {
       const seen = {}, picks = favs.concat(m.recent.map((r) => byId(r.id)).filter(Boolean), LIVE.filter((g) => g.popular)).filter((g) => !seen[g.id] && (seen[g.id] = 1)).slice(0, 4);
-      di.innerHTML = ['games', 'browser', 'music', 'achievements'].map((id) => '<button class="dicon" data-app="' + id + '">' + appIco(id) + '<span>' + esc(APPS[id].title) + '</span></button>').join('') +
-        picks.map((g) => '<button class="dicon" data-play="' + g.id + '">' + gameIco(g) + '<span>' + esc(g.title) + '</span></button>').join('');
+      di.innerHTML = ['games', 'browser', 'music', 'achievements', 'settings'].map((id) => '<button class="desktop-app" data-app="' + id + '">' + appIco(id, 'd-icon') + '<span class="d-label">' + esc(APPS[id].title) + '</span></button>').join('') +
+        picks.map((g) => '<button class="desktop-app" data-play="' + g.id + '">' + gameIco(g, 'd-icon') + '<span class="d-label">' + esc(g.windowTitle || g.title) + '</span></button>').join('');
     }
     applyLayout(root);
     fillCovers(root);
     startViz();
   }
-  const WG_NAMES = { jump: 'Continue playing', quick: 'Quick play', daily: 'Daily challenge', level: 'Your level', music: 'Now playing', games: 'Games', system: 'System status' };
+  const WG_NAMES = { jump: 'Jump back in', music: 'Quick play', daily: 'Today’s challenge', system: 'System status' };
   let editing = false;
-  function layout() { const l = A.store.get('os.widgets', null); return l && Array.isArray(l.order) ? l : { order: ['jump', 'music', 'daily', 'level', 'quick', 'games', 'system'], hidden: ['level', 'quick', 'games', 'system'] }; }
+  function layout() { const l = A.store.get('os.sidebar', null); return l && Array.isArray(l.order) ? l : { order: ['jump', 'music', 'daily', 'system'], hidden: [] }; }
   function applyLayout(root) {
     const L = layout(), secs = {}; $$('[data-wg]', root).forEach((el) => (secs[el.dataset.wg] = el));
     const order = L.order.filter((k) => secs[k]).concat(Object.keys(secs).filter((k) => !L.order.includes(k)));
@@ -566,7 +556,7 @@
     if (act === 'up' && i > 0) { o.splice(i, 1); o.splice(i - 1, 0, k); }
     if (act === 'down' && i < o.length - 1) { o.splice(i, 1); o.splice(i + 1, 0, k); }
     let h = L.hidden.slice(); if (act === 'hide') h = h.includes(k) ? h.filter((x) => x !== k) : h.concat(k);
-    A.store.set('os.widgets', { order: o, hidden: h }); A.meta.flag('widgets'); A.audio.sfx('toggle'); paintHome();
+    A.store.set('os.sidebar', { order: o, hidden: h }); A.meta.flag('widgets'); A.audio.sfx('toggle'); paintHome();
   }
   function progressText(dl) {
     const k = dl.def.kind;
@@ -897,7 +887,7 @@
   /* ========================================================= APP: ABOUT */
   function renderAbout(body) {
     const ports = LIVE.filter((g) => !g.original);
-    body.innerHTML = '<div class="app"><div><h2>Nova OS ' + esc(A.config.version) + '</h2><p class="app-sub">A free game desktop that runs in your browser. ' + LIVE.length + ' games, no downloads, progress that follows you.</p></div>' +
+    body.innerHTML = '<div class="app"><div><h2>Nova OS ' + esc(A.config.version) + '</h2><p class="app-sub">Desktop shell adapted from NebulaHub by Abel, used with his permission. A free game desktop that runs in your browser. ' + LIVE.length + ' games, no downloads, progress that follows you.</p></div>' +
       '<div class="stat-grid"><div class="stat"><span>Games</span><b>' + LIVE.length + '</b></div><div class="stat"><span>Shortcuts</span><b style="font-size:16px"><span class="kbd">/</span> search, <span class="kbd">Ctrl K</span></b></div></div>' +
       '<section style="display:grid;gap:8px"><div class="os-label">Game credits</div><p class="field-hint">These games are open source. Each is hosted under its creator’s license, with trackers and ads removed.</p>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="text-align:left;color:var(--faint)"><th style="padding:8px">Game</th><th style="padding:8px">Creator</th><th style="padding:8px">License</th></tr></thead><tbody>' +

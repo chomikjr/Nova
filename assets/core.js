@@ -55,11 +55,11 @@
   const port = (o) => Object.assign({ status: 'live', path: 'games/play.html?g=' + o.id, dir: o.id, entry: 'index.html' }, o);
   const games = [
     // ----- Popular -----
-    { id: 'minecraft', title: 'Minecraft 26.3', status: 'live', popular: true, tags: ['Sandbox', 'Adventure'], hue: 110, image: 'minecraft',
+    { id: 'minecraft', title: 'Minecraft 26.3', windowTitle: 'Minecraft Launcher 26.3', status: 'live', popular: true, tags: ['Sandbox', 'Adventure'], hue: 110, image: 'minecraft',
   path: 'horizon/dist/index.html',
   tagline: 'Minecraft Java 26.3, rebuilt in Rust.', author: 'Horizon project', license: 'MIT (engine)', repo: 'horizon-rust/horizon',
   controls: 'WASD · mouse · click to capture' },
-    { id: 'minecraft-ikvm', title: 'Minecraft (Sign in)', status: 'live', popular: true, tags: ['Sandbox', 'Adventure'], hue: 120, image: 'minecraft',
+    { id: 'minecraft-ikvm', title: 'Minecraft (Sign in)', windowTitle: 'Minecraft Launcher', status: 'live', popular: true, tags: ['Sandbox', 'Adventure'], hue: 120, image: 'minecraft',
   path: 'https://mc.delsea.one/',
   tagline: 'The real Minecraft Java (1.13–26.2), signed in with your own Microsoft account. Needs a strong computer.', author: 'r58Playz (ikvmcraft)', license: 'AGPL-3.0', repo: 'r58playz/ikvmcraft',
   controls: 'Sign in with Microsoft · pick a version' },
@@ -1552,7 +1552,7 @@
     if (changed === 'music' && !EMBED) settings.get('music') ? audio.music.start() : audio.music.stop();
     if (changed === 'track') audio.music.switchTo(settings.get('track'));
     if (changed === 'shuffle') emit('music', { playing: audio.music.playing });
-    if (changed === 'bg' || changed === 'reducedMotion') bg.applyPage();
+    if (changed === 'bg' || changed === 'reducedMotion' || changed === 'wallLoop') bg.applyPage();
   }
 
   /* ------------------------------------------------------------------------
@@ -2322,12 +2322,28 @@
     return { destroy() { alive = false; cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); } };
   }
 
+  /* Your own wallpapers: images or videos you add, stored on this device (IndexedDB), never uploaded. */
+  const userWalls = {
+    _db: null,
+    db() {
+      if (this._db) return this._db;
+      this._db = new Promise((res, rej) => { const r = indexedDB.open('nova-walls', 1); r.onupgradeneeded = () => r.result.createObjectStore('walls', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+      return this._db;
+    },
+    async tx(mode, fn) { const d = await this.db(); return new Promise((res, rej) => { const t = d.transaction('walls', mode), st = t.objectStore('walls'); const out = fn(st); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); },
+    list() { return this.tx('readonly', (st) => st.getAll()).then((r) => (r || []).sort((a, b) => a.added - b.added)).catch(() => []); },
+    get(id) { return this.tx('readonly', (st) => st.get(id)).catch(() => null); },
+    add(file) { const w = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').slice(0, 40), type: file.type.startsWith('video') ? 'video' : 'image', blob: file, added: Date.now() }; return this.tx('readwrite', (st) => st.put(w)).then(() => w); },
+    remove(id) { return this.tx('readwrite', (st) => st.delete(id)); }
+  };
+  let userUrl = null;
+
   const bg = {
-    presets: PRESETS,
+    presets: PRESETS, userWalls,
     mount: mountBg,
     _page: null, _paused: false,
     /* stop animating while something covers the wallpaper (saves CPU on Chromebooks) */
-    pause() { if (this._paused) return; this._paused = true; if (this._page) { this._page.destroy(); this._page = null; } const v = document.querySelector('.bg-video'); if (v) v.pause(); },
+    pause() { if (this._paused) return; this._paused = true; if (this._page) { this._page.destroy(); this._page = null; } const v = document.querySelector('.bg-video'); if (v) v.pause(); const u = document.querySelector('video.bg-user'); if (u) u.pause(); },
     resume() { if (!this._paused) return; this._paused = false; this.applyPage(); },
     applyPage() {
       if (EMBED) { document.documentElement.style.background = '#08080f'; return; }
@@ -2343,6 +2359,23 @@
       let vid = document.querySelector('.bg-video');
       if (this._page) { this._page.destroy(); this._page = null; }
       let id = settings.get('bg');
+      let uv = document.querySelector('.bg-user');
+      if (typeof id === 'string' && id.startsWith('user:')) {
+        const wid = id.slice(5);
+        canvas.style.display = 'none'; img.style.display = 'none'; if (vid) { vid.pause(); vid.style.display = 'none'; }
+        userWalls.get(wid).then((w) => {
+          if (!w || settings.get('bg') !== id) { if (!w) { settings.set('bg', 'smoke'); } return; }
+          if (userUrl) URL.revokeObjectURL(userUrl);
+          userUrl = URL.createObjectURL(w.blob);
+          if (uv) uv.remove();
+          uv = document.createElement(w.type === 'video' ? 'video' : 'img'); uv.className = 'bg-user'; uv.setAttribute('aria-hidden', 'true');
+          if (w.type === 'video') { uv.muted = true; uv.autoplay = true; uv.playsInline = true; uv.loop = settings.get('wallLoop') !== false; uv.addEventListener('ended', () => { if (!uv.loop) uv.pause(); }); }
+          uv.src = userUrl; document.body.prepend(uv);
+          if (w.type === 'video') { const p = uv.play(); if (p && p.catch) p.catch(() => {}); }
+        });
+        return;
+      }
+      if (uv) { uv.remove(); if (userUrl) { URL.revokeObjectURL(userUrl); userUrl = null; } }
       if (!PRESETS[id] && id !== 'custom') id = 'smoke';
       const def = PRESETS[id];
       const glc = document.querySelector('.bg-gl'); if (glc) glc.style.display = 'none';
@@ -2566,7 +2599,7 @@
     const html = (
       (target ? '' : '<h2>Settings</h2><p class="modal-sub">Make the arcade yours. Changes save automatically.</p>') +
       '<section class="settings-group"><h3>Background</h3><div class="bg-grid"></div>' +
-      '<label class="btn btn-sm" style="margin-top:12px;cursor:pointer">' + icon('upload') + 'Use my own image<input type="file" accept="image/*" class="sr-only bg-upload"></label></section>' +
+      '<label class="btn btn-sm" style="margin-top:12px;cursor:pointer">' + icon('upload') + 'Add images or videos<input type="file" accept="image/*,video/*" multiple class="sr-only bg-upload"></label>' + sw('wallLoop', s.wallLoop !== false, 'Loop video wallpapers', 'Off: a video wallpaper plays once and holds its last frame') + '<p class="field-hint" style="margin-top:8px">Wallpapers you add are saved on this device only.</p></section>' +
       '<section class="settings-group"><h3>Audio</h3>' +
       sw('music', s.music, 'Music', 'Your stations, or tracks generated live') +
       '<div class="setting-row"><label class="label" for="set-track">Track</label><select class="select" id="set-track" style="max-width:240px;min-height:42px">' + trackOpts + '</select></div>' +
@@ -2582,7 +2615,7 @@
       sw('showFps', s.showFps, 'FPS counter', 'Show frame rate in the dock') +
       sw('gamesMaximized', s.gamesMaximized, 'Open games full size', 'Otherwise games open in a window') +
       sw('lockScreen', s.lockScreen, 'Lock screen on start', 'Show the big clock before the desktop') +
-      sw('clock24', s.clock24, '24-hour clock') + '</section>' +
+      sw('clock24', s.clock24, '24-hour clock') + sw('fastBoot', s.fastBoot, 'Fast boot', 'Skip the startup animation') + '</section>' +
       '<section class="settings-group"><h3>Data</h3><div class="setting-row"><div><div class="label">Reset this device</div><div class="desc">Clears scores, settings and local accounts</div></div><button class="btn btn-sm st-reset">' + icon('trash') + 'Reset</button></div></section>');
     const thumbs = [];
     let m;
@@ -2608,8 +2641,26 @@
       });
       grid.appendChild(tile);
     });
-    box.querySelector('.bg-upload').addEventListener('change', (e) => {
-      const file = e.target.files[0]; if (!file) return;
+    userWalls.list().then((list) => list.forEach((w) => {
+      const id = 'user:' + w.id, url = URL.createObjectURL(w.blob);
+      const tile = el('<button class="bg-tile" aria-pressed="' + (s.bg === id) + '" aria-label="' + esc(w.name) + '"><span class="bg-tile-name">' + esc(w.name) + (w.type === 'video' ? ' · Live' : '') + '</span><span class="bg-del" role="button" tabindex="0" aria-label="Remove ' + esc(w.name) + '" title="Remove">✕</span></button>');
+      tile.prepend(w.type === 'video' ? el('<video class="bg-tile-img" muted loop playsinline autoplay src="' + url + '" style="object-fit:cover;width:100%;height:100%"></video>') : el('<div class="bg-tile-img" style="background-image:url(' + url + ')"></div>'));
+      tile.addEventListener('click', (ev) => {
+        if (ev.target.closest('.bg-del')) { userWalls.remove(w.id).then(() => { if (settings.get('bg') === id) settings.set('bg', 'smoke'); tile.remove(); toast('Wallpaper removed.', 'trash'); }); return; }
+        audio.sfx('toggle'); grid.querySelectorAll('.bg-tile').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+        tile.setAttribute('aria-pressed', 'true'); settings.set('bg', id); meta.flag('customized');
+      });
+      grid.appendChild(tile);
+    }));
+    box.querySelector('.bg-upload').addEventListener('change', async (e) => {
+      const files = [...e.target.files].filter((f) => /^(image|video)\//.test(f.type)); if (!files.length) return;
+      if (files.length > 1 || files[0].type.startsWith('video')) {
+        let last = null; for (const f of files) { try { last = await userWalls.add(f); } catch (err) { toast('Couldn’t save ' + f.name + '.', 'info'); } }
+        if (last) { settings.set('bg', 'user:' + last.id); meta.flag('customized'); audio.sfx('coin'); toast(files.length > 1 ? files.length + ' wallpapers added.' : 'Wallpaper added.', 'image'); }
+        if (target) openSettings(target); else { m.close(); setTimeout(openSettings, 260); }
+        return;
+      }
+      const file = files[0];
       const reader = new FileReader();
       reader.onload = () => {
         const im = new Image();
