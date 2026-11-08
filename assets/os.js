@@ -380,7 +380,7 @@
       visibleApps().map((id) => '<button class="sa" data-app="' + id + '">' + appIco(id) + '<span>' + esc(APPS[id].title.replace(' & Credits', '').replace('Request a Game', 'Request')) + '</span></button>').join('') + '</div></div>' +
       '<div><div class="os-label" style="margin-bottom:8px">' + (recent.length ? 'Recent' : 'Popular') + '</div><div class="start-list">' +
       (recent.length ? recent : LIVE.filter((g) => g.popular).slice(0, 4)).map((g) => '<button class="sl" data-game="' + g.id + '">' + gameIco(g) + '<span><b>' + esc(g.title) + '</b><small>' + esc(g.tags.join(', ')) + '</small></span></button>').join('') + '</div></div></div>' +
-      '<div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><button class="btn btn-sm btn-ghost" data-st="random">' + icon('shuffle') + 'Random game</button>' + (window.NovaCanInstall && window.NovaCanInstall() ? '<button class="btn btn-sm btn-ghost" data-st="install">' + icon('upload') + 'Install app</button>' : '') + (wins.size ? '<button class="btn btn-sm btn-ghost" data-st="closeall">' + icon('home') + 'Show desktop</button>' : '') +
+      '<div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><button class="btn btn-sm btn-ghost" data-st="random">' + icon('shuffle') + 'Random game</button>' + (window.NovaInstalled && window.NovaInstalled() ? '' : '<button class="btn btn-sm btn-ghost" data-st="install">' + icon('upload') + 'Install app</button>') + (wins.size ? '<button class="btn btn-sm btn-ghost" data-st="closeall">' + icon('home') + 'Show desktop</button>' : '') +
       '<span style="display:flex;gap:6px"><button class="btn btn-sm btn-ghost" data-st="lock">' + icon('lock') + 'Lock</button>' + (u ? '<button class="btn btn-sm btn-ghost" data-st="logout">' + icon('power') + 'Log out</button>' : '<button class="btn btn-sm btn-ghost" data-st="login">' + icon('power') + 'Log in</button>') + '</span></div>';
     start.classList.add('is-open');
     const q = $('#start-q', start);
@@ -526,6 +526,7 @@
       '<section data-wg="daily" class="sidebar__section"><h3 class="sidebar__title">Today’s challenge</h3>' +
         '<div class="sidebar__card is-static"><span class="sidebar__info"><strong style="white-space:normal">' + esc(dl.def.text) + '</strong><small>' + progressText(dl) + (dl.done ? ', done (+' + dl.xp + ' XP)' : ', resets in ' + hLeft + 'h ' + mLeft + 'm') + '</small><span class="bar" style="margin-top:8px;height:3px"><i style="width:' + pct + '%"></i></span></span></div></section>' +
       '<section data-wg="system" class="sidebar__section"><h3 class="sidebar__title">System status</h3>' +
+        (window.NovaInstalled && window.NovaInstalled() ? '' : '<button class="sidebar__card" data-act="install"><span class="sidebar__info"><strong>Install Nova</strong><small>Get it as an app with its own window</small></span>' + icon('upload', 'sidebar__chevron') + '</button>') +
         '<button class="sidebar__card" data-app="updates"><span class="sidebar__info"><strong>Update log</strong><small>v' + A.config.version + ', see what changed</small></span>' + icon('chevronRight', 'sidebar__chevron') + '</button>' +
         '<button class="sidebar__card" data-app="profile"><span class="sidebar__info"><strong>' + (u ? esc(u.username) : 'Guest') + ', level ' + lv.level + '</strong><small>' + achDone + '/' + achTotal + ' achievements · ' + m.streak.count + '-day streak</small></span>' + icon('chevronRight', 'sidebar__chevron') + '</button></section>';
     const di = $('#desk-icons');
@@ -591,6 +592,7 @@
       const k = act.dataset.act;
       if (k === 'shuffle') { quickId = pickQuick(A.meta.get()); A.audio.sfx('toggle'); paintHome(); }
       if (k === 'music-next') { A.audio.unlock(); A.audio.music.next(); if (!A.audio.music.playing) { A.audio.music.held = false; A.settings.set('music', true); setTimeout(() => A.audio.music.start(), 50); } }
+      if (k === 'install') { window.NovaInstall(); return; }
       if (k === 'music') { A.audio.unlock(); A.settings.set('music', !A.audio.music.playing); if (A.settings.get('music')) setTimeout(() => A.audio.music.start(), 50); setTimeout(paintHome, 120); }
       if (k === 'signup') A.ui.openAuth('signup');
       if (k === 'search') openPalette();
@@ -1041,12 +1043,26 @@
   }, 650);
 
   /* ------------------------------------------------------- INSTALL APP */
-  let installEvt = null;
+  let installEvt = window.__novaInstall || null;
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
-  addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; });
-  addEventListener('appinstalled', () => { installEvt = null; A.ui.toast('Nova OS installed!', 'sparkles', { big: true }); });
-  window.NovaInstall = async () => { if (!installEvt) return false; installEvt.prompt(); const r = await installEvt.userChoice; installEvt = null; return r.outcome === 'accepted'; };
+  addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; renderHome(); });
+  addEventListener('appinstalled', () => { installEvt = null; A.ui.toast('Nova installed! Find it with your other apps.', 'sparkles', { big: true }); renderHome(); });
+  const standalone = () => matchMedia('(display-mode: standalone), (display-mode: window-controls-overlay), (display-mode: fullscreen)').matches || navigator.standalone === true;
+  /* The browser's own install prompt when it offers one; otherwise step-by-step instructions for this browser. */
+  window.NovaInstall = async () => {
+    if (installEvt) { const ev = installEvt; installEvt = null; ev.prompt(); const r = await ev.userChoice; return r.outcome === 'accepted'; }
+    const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1), edge = /Edg\//.test(ua), android = /Android/.test(ua), safari = /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua), firefox = /Firefox/.test(ua);
+    const steps = ios ? ['Tap the <b>Share</b> button in Safari (the square with an arrow).', 'Scroll down and tap <b>Add to Home Screen</b>.', 'Tap <b>Add</b>. Nova appears on your home screen.']
+      : android ? ['Tap the <b>⋮</b> menu in Chrome.', 'Tap <b>Add to Home screen</b> or <b>Install app</b>.', 'Tap <b>Install</b>.']
+      : edge ? ['Click the <b>⋯</b> menu at the top right of Edge.', 'Choose <b>Apps</b>, then <b>Install Nova OS</b>.', 'Click <b>Install</b>.']
+      : safari ? ['In Safari, open the <b>File</b> menu (or the Share button).', 'Choose <b>Add to Dock</b>.', 'Click <b>Add</b>.']
+      : firefox ? ['Firefox can’t install sites as apps on computers.', 'Open nova.delsea.one in <b>Chrome</b> or <b>Edge</b> and click Install app there.']
+      : ['Click the <b>install icon</b> at the right end of the address bar (a monitor with a down arrow), or open the <b>⋮</b> menu.', 'In the menu choose <b>Cast, save and share</b>, then <b>Install page as app</b> (or <b>Install Nova OS</b>).', 'Click <b>Install</b>. Nova opens in its own window and shows up with your other apps.'];
+    A.ui.modal('<h2>Install Nova</h2><p class="modal-sub">Get Nova as its own app, with an icon and its own window.</p><ol style="display:grid;gap:10px;padding-left:20px;margin:0">' + steps.map((t) => '<li>' + t + '</li>').join('') + '</ol>', { label: 'Install Nova' });
+    return false;
+  };
   window.NovaCanInstall = () => !!installEvt;
+  window.NovaInstalled = standalone;
 
   window.NovaOS = { openGame, openApp, openPalette, wins, closeWindow, showLock, confetti };
 })();
