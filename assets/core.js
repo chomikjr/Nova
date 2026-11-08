@@ -37,9 +37,14 @@
       supabaseUrl: 'https://oazqmjnkkyqwxpsglgcb.supabase.co',
       supabaseAnonKey: 'sb_publishable_h-I9xAYcRlVRze13k2v40Q_CZ6Rf8C3'
     },
-    version: '3.1',
+    version: '4.0',
     changelog: [
-      { v: '3.1', date: 'Nov 2026', items: ['Music stations: Hip Hop, Lo-Fi and more, playing real songs', 'Song list, skip back/forward, shuffle and a seek bar in the Music app', 'Media keys and lock-screen controls work for stations', 'Stations keep playing in a background tab'] },
+      { v: '4.0', date: 'Nov 8, 2026', items: ['New look: boot animation, lock screen with a big day and date, centered day name, right sidebar and a floating dock (shell adapted from NebulaHub by Abel)', 'Neam: the game library, rebuilt with Store, Library and Wishlist tabs and a sidebar list of every game', 'Novify: the music app, rebuilt with a station library, song list and a bottom player bar', 'Your own wallpapers: add images or videos (saved on your device), with a loop switch for video wallpapers', 'Game windows show their real names, like Minecraft Launcher 26.3', 'Fast boot setting to skip the startup animation', 'New app icons'] },
+      { v: '3.5', date: 'Nov 7, 2026', items: ['Minecraft 26.3: Minecraft Java rebuilt in Rust, running in a window (Chrome works best)', 'Minecraft (Sign in): the real Minecraft Java 1.13 to 26.2, signed in with your own Microsoft account', 'Bit Planes, played on its creator’s site', 'Games that break can be switched off while they’re being fixed'] },
+      { v: '3.4', date: 'Nov 6, 2026', items: ['Sign in with Google', 'Password reset emails', 'Report a problem button on every game', 'Secret achievements to discover', 'Three hidden Easter eggs', 'Privacy and Terms pages, plus a share preview image'] },
+      { v: '3.3', date: 'Nov 5, 2026', items: ['Log in asks for your password once (confirming is only for sign up)', 'Live 4K animated wallpapers', 'Owner tools: an Online now list and live admin commands'] },
+      { v: '3.2', date: 'Nov 4, 2026', items: ['362 more games, each with its own cover art', 'Nova Browser app', 'Desktop redesign with desktop icons, widgets and a Windows-style taskbar', 'Five animated wallpapers, with Smoke as the default'] },
+      { v: '3.1', date: 'Nov 3, 2026', items: ['Music stations: Hip Hop, Lo-Fi and more, playing real songs', 'Song list, skip back/forward, shuffle and a seek bar in the Music app', 'Media keys and lock-screen controls work for stations', 'Stations keep playing in a background tab'] },
       { v: '3.0', date: 'Nov 2026', items: ['Nova OS: windows, split screen, dock, start menu, lock screen and customizable widgets', 'Everything is free — no more Pro', '36 new games (Antimatter Dimensions, Candy Box 2, Wordle+, n-gon, Solitaire, Q1K3, Pac-Man…)', 'XP, levels, achievements, daily + weekly challenges, streaks and a weekly XP race', 'Favorites, likes, trending, recently played and game requests'] },
       { v: '2.0', date: 'Oct 2026', items: ['Cloud accounts with sync across devices', 'Global leaderboards', '13 open-source games'] },
       { v: '1.0', date: 'Oct 2026', items: ['Nova Arcade launches with Neon Snake'] }
