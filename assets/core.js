@@ -1932,6 +1932,8 @@
   /* Live (WebGL) wallpapers from assets/shaders.js. Previews, Reduce motion and browsers without
      WebGL use the pre-rendered still <id>.jpg; on the page the shader runs at the screen's own
      resolution (4K included), capped at 30 fps, lowering its resolution if the device can't keep up. */
+  /* a looping video wallpaper: <id>.mp4 with <id>.jpg as its still frame and thumbnail */
+  function videoPreset(name, id) { const d = imagePreset(name, id + '.jpg'); d.src = id + '.mp4'; d.video = true; return d; }
   function livePreset(name, id) { const d = imagePreset(name, id + '.jpg'); d.gl = id; return d; }
   function glRunner(canvas) {
     const gl = canvas.getContext('webgl', { antialias: false, depth: false, stencil: false, alpha: false, powerPreference: 'low-power' });
@@ -1989,6 +1991,9 @@
     'northern-lights': livePreset('Northern Lights', 'northern-lights'),
     'nebula-drift': livePreset('Nebula Drift', 'nebula-drift'),
     galaxy: imagePreset('Galaxy', 'galaxy.jpg'),
+    'snowy-campfire': videoPreset('Snowy Campfire', 'minecraft-snowy-campfire'),
+    'fire-arrow': videoPreset('Fire Arrow', 'sukuna-fire-arrow'),
+    'skull-guns': videoPreset('Skull & Guns', 'hunt-showdown-skull-guns'),
     void: {
       name: 'Void', scale: 0.55,
       setup(c, w, h, S) {
@@ -2391,8 +2396,9 @@
       }
       if (def && def.video && !settings.reducedMotion()) {
         if (!vid) { vid = document.createElement('video'); vid.className = 'bg-video'; vid.muted = true; vid.loop = true; vid.autoplay = true; vid.playsInline = true; vid.setAttribute('playsinline', ''); vid.setAttribute('aria-hidden', 'true'); document.body.prepend(vid); }
-        const src = WALL_DIR + def.video + (vid.canPlayType('video/webm; codecs="vp9"') ? '.webm' : '.mp4');
+        const src = def.src ? WALL_DIR + def.src : WALL_DIR + def.video + (vid.canPlayType('video/webm; codecs="vp9"') ? '.webm' : '.mp4');
         if (vid.dataset.src !== src) { vid.dataset.src = src; vid.poster = WALL_DIR + def.file; vid.src = src; }
+        vid.loop = settings.get('wallLoop') !== false;
         vid.style.objectFit = def.fit; vid.style.display = 'block'; canvas.style.display = 'none'; img.style.display = 'none';
         const p = vid.play(); if (p && p.catch) p.catch(() => {});
         return;
@@ -2595,6 +2601,50 @@
 
   /* ---- Settings modal ---- */
   const ACCENTS = [['violet', '#8b5cf6'], ['cyan', '#06b6d4'], ['lime', '#84cc16'], ['sunset', '#f97316'], ['rose', '#f43f5e']];
+  /* Wallpaper Store: search free 4K photos (Unsplash, via /api/walls) and save one as your wallpaper. */
+  function openWallStore(after) {
+    const cats = ['Wallpapers', 'Space', 'Mountains', 'Night sky', 'Ocean', 'Forest', 'City lights', 'Abstract', 'Dark', 'Neon', 'Aurora', 'Desert'];
+    const m = modal('<h2>Wallpaper Store</h2><p class="modal-sub">Free 4K photos from Unsplash. Pick one to make it your wallpaper.</p>' +
+      '<form class="ws-form" style="display:flex;gap:8px"><input class="input ws-q" type="search" placeholder="Search wallpapers (space, rain, mountains…)" aria-label="Search wallpapers" style="flex:1"><button class="btn btn-primary" type="submit">' + icon('search') + 'Search</button></form>' +
+      '<div class="chips ws-cats" style="margin:12px 0">' + cats.map((c, i) => '<button type="button" class="chip" data-c="' + (i ? esc(c) : '') + '" aria-pressed="' + !i + '">' + esc(c) + '</button>').join('') + '</div>' +
+      '<div class="ws-grid"></div><div style="display:flex;justify-content:center;margin-top:14px"><button type="button" class="btn btn-sm ws-more" hidden>Load more</button></div>' +
+      '<p class="field-hint" style="margin-top:10px">Photos from <a href="https://unsplash.com/?utm_source=nova&amp;utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>. Saved wallpapers stay on this device.</p>', { wide: true, label: 'Wallpaper Store' });
+    const box = m.el, grid = box.querySelector('.ws-grid'), more = box.querySelector('.ws-more');
+    let q = '', page = 1, busy = false;
+    const load = async (reset) => {
+      if (busy) return; busy = true;
+      if (reset) { page = 1; grid.innerHTML = '<p class="empty">Loading…</p>'; }
+      try {
+        const r = await fetch('api/walls?q=' + encodeURIComponent(q) + '&page=' + page);
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { grid.innerHTML = '<p class="empty">' + (j.error === 'not_configured' ? 'The Wallpaper Store isn’t set up yet (it needs an Unsplash key on the server).' : r.status === 429 ? 'Too many searches right now. Try again in a little while.' : 'Couldn’t load wallpapers. Try again.') + '</p>'; more.hidden = true; return; }
+        if (reset) grid.innerHTML = '';
+        if (!j.list.length && reset) grid.innerHTML = '<p class="empty">Nothing found. Try another word.</p>';
+        j.list.forEach((p) => {
+          const t = el('<figure class="ws-item" style="background:' + esc(p.color || '#111') + '"><img src="' + esc(p.thumb) + '" alt="' + esc(p.alt) + '" loading="lazy" crossorigin="anonymous"><figcaption><a href="' + esc(p.authorUrl) + '" target="_blank" rel="noopener">' + esc(p.author || 'Unsplash') + '</a><button type="button" class="btn btn-sm btn-primary ws-use">Use</button></figcaption></figure>');
+          t.querySelector('.ws-use').addEventListener('click', async (ev) => {
+            const b = ev.currentTarget; b.disabled = true; b.textContent = 'Saving 4K…';
+            try {
+              const res = await fetch(p.full, { mode: 'cors' }); if (!res.ok) throw new Error('dl');
+              const blob = await res.blob();
+              const w = await userWalls.add(new File([blob], (p.alt || 'Wallpaper').slice(0, 36) + '.jpg', { type: blob.type || 'image/jpeg' }));
+              fetch('api/walls?track=' + encodeURIComponent(p.dl)).catch(() => {});
+              settings.set('bg', 'user:' + w.id); meta.flag('customized'); audio.sfx('coin'); toast('Wallpaper set: photo by ' + (p.author || 'Unsplash'), 'image');
+              m.close(); if (after) after();
+            } catch (err) { b.disabled = false; b.textContent = 'Use'; toast('Couldn’t download that one. Try another.', 'info'); }
+          });
+          grid.appendChild(t);
+        });
+        more.hidden = j.list.length < 24;
+      } catch (e) { grid.innerHTML = '<p class="empty">Couldn’t load wallpapers. Check your connection.</p>'; }
+      finally { busy = false; }
+    };
+    box.querySelector('.ws-form').addEventListener('submit', (e) => { e.preventDefault(); q = box.querySelector('.ws-q').value.trim(); box.querySelectorAll('.ws-cats .chip').forEach((c) => c.setAttribute('aria-pressed', 'false')); load(true); });
+    box.querySelector('.ws-cats').addEventListener('click', (e) => { const c = e.target.closest('[data-c]'); if (!c) return; q = c.dataset.c; box.querySelectorAll('.ws-cats .chip').forEach((x) => x.setAttribute('aria-pressed', String(x === c))); load(true); });
+    more.addEventListener('click', () => { page++; load(false); });
+    load(true);
+  }
+
   function openSettings(target) {
     const s = settings.all();
     const curKey = audio.music.now().key;
@@ -2604,7 +2654,7 @@
     const html = (
       (target ? '' : '<h2>Settings</h2><p class="modal-sub">Make the arcade yours. Changes save automatically.</p>') +
       '<section class="settings-group"><h3>Background</h3><div class="bg-grid"></div>' +
-      '<label class="btn btn-sm" style="margin-top:12px;cursor:pointer">' + icon('upload') + 'Add images or videos<input type="file" accept="image/*,video/*" multiple class="sr-only bg-upload"></label>' + sw('wallLoop', s.wallLoop !== false, 'Loop video wallpapers', 'Off: a video wallpaper plays once and holds its last frame') + '<p class="field-hint" style="margin-top:8px">Wallpapers you add are saved on this device only.</p></section>' +
+      '<label class="btn btn-sm" style="margin-top:12px;cursor:pointer">' + icon('upload') + 'Add images or videos<input type="file" accept="image/*,video/*" multiple class="sr-only bg-upload"></label> <button type="button" class="btn btn-sm btn-primary bg-store" style="margin-top:12px">' + icon('image') + 'Browse 4K wallpapers</button>' + sw('wallLoop', s.wallLoop !== false, 'Loop video wallpapers', 'Off: a video wallpaper plays once and holds its last frame') + '<p class="field-hint" style="margin-top:8px">Wallpapers you add are saved on this device only.</p></section>' +
       '<section class="settings-group"><h3>Audio</h3>' +
       sw('music', s.music, 'Music', 'Your stations, or tracks generated live') +
       '<div class="setting-row"><label class="label" for="set-track">Track</label><select class="select" id="set-track" style="max-width:240px;min-height:42px">' + trackOpts + '</select></div>' +
@@ -2657,15 +2707,16 @@
       });
       grid.appendChild(tile);
     }));
+    box.querySelector('.bg-store').addEventListener('click', () => openWallStore(() => { if (target) openSettings(target); else { m.close(); setTimeout(openSettings, 260); } }));
     box.querySelector('.bg-upload').addEventListener('change', async (e) => {
       const files = [...e.target.files].filter((f) => /^(image|video)\//.test(f.type)); if (!files.length) return;
-      if (files.length > 1 || files[0].type.startsWith('video')) {
+      {
         let last = null; for (const f of files) { try { last = await userWalls.add(f); } catch (err) { toast('Couldn’t save ' + f.name + '.', 'info'); } }
         if (last) { settings.set('bg', 'user:' + last.id); meta.flag('customized'); audio.sfx('coin'); toast(files.length > 1 ? files.length + ' wallpapers added.' : 'Wallpaper added.', 'image'); }
         if (target) openSettings(target); else { m.close(); setTimeout(openSettings, 260); }
         return;
       }
-      const file = files[0];
+      const file = files[0]; if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
         const im = new Image();
